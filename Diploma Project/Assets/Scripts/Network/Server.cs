@@ -14,13 +14,13 @@ public class Server : MonoBehaviour
     [SerializeField] ServerUI serverUI;
 
     bool isConnected = false;
-    
+
     Thread receiveThread;
     UdpClient client;
-    string lastReceivedUDPPacket="";
-    string allReceivedUDPPackets="";
-    string lastAddedDataInfo = ""; 
-   
+    string lastReceivedUDPPacket = "";
+    string allReceivedUDPPackets = "";
+    string lastAddedDataInfo = "";
+
 
     #endregion
 
@@ -60,12 +60,12 @@ public class Server : MonoBehaviour
     {
         serverUI.OnSendButtonPressed -= ServerUI_OnSendButtonPressed;
         serverUI.OnClearButtonPressed -= ServerUI_OnClearButtonPressed;
-        serverUI.OnMainButtonPressed -= ServerUI_OnMainButtonPressed; 
+        serverUI.OnMainButtonPressed -= ServerUI_OnMainButtonPressed;
     }
 
     void Update()
     {
-        if(!lastAddedDataInfo.Equals(""))
+        if (!lastAddedDataInfo.Equals(""))
         {
             serverUI.AddToOutput(lastAddedDataInfo);
             lastAddedDataInfo = string.Empty;
@@ -81,13 +81,13 @@ public class Server : MonoBehaviour
     void ServerUI_OnSendButtonPressed(ServerUI sender)
     {
         Debug.Log("Try send server " + sender.InputText);
-        if(IsConnected)
+        if (IsConnected)
         {
             sender.ClearInput();
         }
     }
 
-    
+
     void ServerUI_OnClearButtonPressed(ServerUI sender)
     {
 
@@ -97,7 +97,7 @@ public class Server : MonoBehaviour
     void ServerUI_OnMainButtonPressed(ServerUI sender)
     {
 
-        if(!IsConnected)
+        if (!IsConnected)
         {
             receiveThread = new Thread(
                 new ThreadStart(ReceiveData));
@@ -115,7 +115,7 @@ public class Server : MonoBehaviour
 
 
     #endregion
-    
+
 
 
 
@@ -151,16 +151,16 @@ public class Server : MonoBehaviour
             {
                 IPEndPoint anyIP = new IPEndPoint(IPAddress.Any, 0);
                 byte[] data = client.Receive(ref anyIP);
- 
+
                 string text = Encoding.UTF8.GetString(data);
                 //Debug.Log(text);
                 lastAddedDataInfo += text;
                 // serverUI.AddToOutput(text);
-               
-                lastReceivedUDPPacket=text;
-               
-                allReceivedUDPPackets=allReceivedUDPPackets+text;
-               
+
+                lastReceivedUDPPacket = text;
+
+                allReceivedUDPPackets = allReceivedUDPPackets + text;
+
             }
             catch (Exception err)
             {
@@ -168,10 +168,10 @@ public class Server : MonoBehaviour
             }
         }
     }
-   
+
     public string getLatestUDPPacket()
     {
-        allReceivedUDPPackets="";
+        allReceivedUDPPackets = "";
         return lastReceivedUDPPacket;
     }
 }
