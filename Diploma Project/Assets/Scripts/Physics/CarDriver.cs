@@ -163,10 +163,10 @@ public class CarDriver : MonoBehaviour
     void Update()
     {
         Vector3 newPosition = centerOfMassTransform.position;
-        if(prevPosition != null)
-        {
-            Debug.DrawLine(prevPosition.Value, newPosition, Color.red, 100f);
-        }
+        // if(prevPosition != null)
+        // {
+        //     Debug.DrawLine(prevPosition.Value, newPosition, Color.red, 100f);
+        // }
         
         prevPosition = newPosition;
     }
