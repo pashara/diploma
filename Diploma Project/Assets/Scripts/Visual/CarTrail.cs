@@ -127,7 +127,7 @@ public class CarTrail : MonoBehaviour
             TrailPoint p = new TrailPoint();
             p.basePosition = _baseAnchor.position;
             p.circlePoints = MakeCircle(numPoints);
-            p.rotationVector = _baseAnchor.localRotation.eulerAngles;
+            p.rotationVector = _baseAnchor.rotation.eulerAngles;
             p.timeCreated = Time.time;
             points.Add(p);
         }
@@ -264,14 +264,20 @@ public class CarTrail : MonoBehaviour
                 }
             // }
 
+
+            for(int i = 0; i < newTriangles.Length - 1; i++)
+            {
+                Debug.DrawLine(newVertices[newTriangles[i]],newVertices[newTriangles[i + 1]], Color.red);
+            }
+
             trailMesh.Clear();
 
-            // trailMesh.vertices = newVertices;
-            // trailMesh.uv = newUV;
-            // trailMesh.colors = colors;
-            // trailMesh.triangles = newTriangles;
+            trailMesh.vertices = newVertices;
+            trailMesh.uv = newUV;
+            trailMesh.colors = colors;
+            trailMesh.triangles = newTriangles;
 
-            // trailMesh.RecalculateNormals();
+            trailMesh.RecalculateNormals();
         }
     }
 
@@ -374,7 +380,7 @@ public class CarTrail : MonoBehaviour
     
     void Awake()
     {
-        Initialize(1f, new Gradient(), transform);
+        Initialize(0.25f, new Gradient(), transform);
     }
     void Update()
     {
