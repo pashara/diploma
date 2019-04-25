@@ -1,0 +1,9 @@
+@startuml
+
+
+ApplicationUser <|-- Speaker
+ApplicationUser <|-- Attendee
+Speaker "1" *-- "*" Topic
+Event "1" o-- "*" Speaker
+Event "1" o-- "*" Attendee
+@enduml

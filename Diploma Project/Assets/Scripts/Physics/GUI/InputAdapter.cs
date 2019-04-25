@@ -22,13 +22,16 @@ public class InputAdapter : MonoBehaviour
         float result = Input.GetAxis ("Horizontal");
         if (Mathf.Approximately(result, 0f))
         {
-            if (SimpleGui.Instance.IsPressed(GuiButtonTypeTEMP.Right))
+            if (SimpleGui.Instance != null)
             {
-                result = 1f;
-            }
-            else if (SimpleGui.Instance.IsPressed(GuiButtonTypeTEMP.Left))
-            {
-                result = -1f;
+                if (SimpleGui.Instance.IsPressed(GuiButtonTypeTEMP.Right))
+                {
+                    result = 1f;
+                }
+                else if (SimpleGui.Instance.IsPressed(GuiButtonTypeTEMP.Left))
+                {
+                    result = -1f;
+                }
             }
         }
         return result;
@@ -38,13 +41,16 @@ public class InputAdapter : MonoBehaviour
         float result = Input.GetAxis ("Vertical");
         if (Mathf.Approximately(result, 0f))
         {
-            if (SimpleGui.Instance.IsPressed(GuiButtonTypeTEMP.Up))
+            if (SimpleGui.Instance != null)
             {
-                result = 1f;
-            }
-            else if (SimpleGui.Instance.IsPressed(GuiButtonTypeTEMP.Down))
-            {
-                result = -1f;
+                if (SimpleGui.Instance.IsPressed(GuiButtonTypeTEMP.Up))
+                {
+                    result = 1f;
+                }
+                else if (SimpleGui.Instance.IsPressed(GuiButtonTypeTEMP.Down))
+                {
+                    result = -1f;
+                }
             }
         }
         return result;

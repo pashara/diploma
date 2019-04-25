@@ -1,112 +1,96 @@
-﻿using UnityEngine;
-using UnityEngine.Networking;
+﻿using System.Collections.Generic;
 using System.Text;
 
-public class MyNetworkManager : MonoBehaviour
+using UnityEngine;
+using UnityEngine.Networking;
+
+public class MyNetworkManager : NetworkManager
 {
+
+    public List<Player> players = new List<Player>();
 
     public static MyNetworkManager Instance
     {
         get;
         private set;
     }
-    public bool isAtStartup = true;
-    NetworkClient myClient;
 
-
-    void Awake()
+    private void Awake()
     {
-        MyNetworkManager.Instance = this;
+        Instance = this;
     }
-    void Update()
+
+    public override void OnServerAddPlayer(NetworkConnection conn, short playerControllerId)
     {
-        if (isAtStartup)
+        //base.OnServerAddPlayer(conn, playerControllerId);
+
+
+        var currentPlayersCount = NetworkServer.connections.Count;
+
+        //if (currentPlayersCount <= 2)
+            //{
+            GameObject player = Instantiate(playerPrefab, startPositions[currentPlayersCount - 1].position, Quaternion.identity);
+            NetworkServer.AddPlayerForConnection(conn, player, playerControllerId);
+            players.Add(player.GetComponent<Player>());
+            //}
+        //else
+        //{
+        //    conn.Disconnect();
+        //}
+    }
+
+
+
+    public override void OnStartHost()
+    {
+        base.OnStartHost();
+        ShowGameUI();
+    }
+
+
+    public override void OnStartClient(NetworkClient client)
+    {
+        base.OnStartClient(client);
+        ShowGameUI();
+    }
+
+
+    public override void OnStopHost()
+    {
+        base.OnStopHost();
+        HideGameUI();
+    }
+
+
+    public override void OnStopClient()
+    {
+        base.OnStopClient();
+        HideGameUI();
+    }
+
+
+    void ShowGameUI()
+    {
+        Debug.Log("Show game UI");
+        GuiManager.Instance.HideScreen(ScreenType.MainMenu, true, (screen) =>
         {
-            if (Input.GetKeyDown(KeyCode.S))
+            GuiManager.Instance.ShowScreen(ScreenType.GameScreen, true, (gameScreen) =>
             {
-                SetupServer();
-            }
-
-            if (Input.GetKeyDown(KeyCode.B))
-            {
-                SetupServer();
-                SetupLocalClient();
-            }
-        }
+                (gameScreen as GameScreen).Initialize();
+            });
+        });
     }
-    void OnGUI()
+
+
+    void HideGameUI()
     {
-        if (isAtStartup)
+        Debug.Log("HideGameUI");
+        GuiManager.Instance.HideScreen(ScreenType.GameScreen, true, (screen) =>
         {
-            GUI.Label(new Rect(2, 10, 150, 100), "Press S for server");
-            GUI.Label(new Rect(2, 30, 150, 100), "Press B for both");
-            GUI.Label(new Rect(2, 50, 150, 100), "Press C for client");
-        }
-    }
-
-
-
-
-    // Create a server and listen on a port
-    public void SetupServer()
-    {
-        NetworkServer.Reset();
-        NetworkServer.Listen(4444);
-
-        NetworkServer.RegisterHandler(MsgType.Connect, OnClientConnected);
-        NetworkServer.RegisterHandler(ZMessageType.STRING, OnServerReceiveStringMessage);
-        isAtStartup = false;
-    }
-
-
-    void OnServerReceiveStringMessage(NetworkMessage netMsg)
-    {
-        var stringMsg = netMsg.ReadMessage<StringMessage>();
-        Debug.Log("You string text: " + stringMsg.stringValue);
-    }
-
-    void OnClientConnected(NetworkMessage netMsg)
-    {
-        Debug.Log(netMsg);
-        StringMessage stringMsg = new StringMessage();
-        netMsg.ReadMessage<StringMessage>(stringMsg);
-        // Debug.Log("You string text: " + stringMsg.stringValue);
-    }
-
-
-
-
-
-
-
-
-
-    // Create a local client and connect to the local server
-    public void SetupLocalClient()
-    {
-        myClient = ClientScene.ConnectLocalServer();
-        myClient.RegisterHandler(MsgType.Connect, OnConnected);
-        myClient.RegisterHandler(ZMessageType.STRING, ClientReceiveStringMessage);
-        isAtStartup = false;
-    }
-
-
-    // client function
-    public void OnConnected(NetworkMessage netMsg)
-    {
-        int a = netMsg.channelId;
-        Debug.Log("Connected to server");
-        SentDataFromClient(Encoding.ASCII.GetBytes("someString"));
-    }
-    
-    void SentDataFromClient(byte[] data)
-    {
-        myClient.SendBytes(data, 10, 4444);
-    }
-    
-    void ClientReceiveStringMessage(NetworkMessage netMsg)
-    {
-        var stringMsg = netMsg.ReadMessage<StringMessage>();
-        Debug.Log("Your message is " + stringMsg.stringValue);
+            GuiManager.Instance.ShowScreen(ScreenType.MainMenu, true, (menuScreen) =>
+            {
+                (menuScreen as StartScreen).Initialize(GameManager.Instance.UserData);
+            });
+        });
     }
 }

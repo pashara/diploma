@@ -13,6 +13,7 @@ public enum GuiButtonTypeTEMP
     Left = 3,
     Right = 4,
     Reset = 5,
+    Disconnect = 6,
 }
 public class SimpleGui : MonoBehaviour
 {
@@ -23,6 +24,7 @@ public class SimpleGui : MonoBehaviour
     [SerializeField] UiButton leftButton;
     [SerializeField] UiButton rightButton;
     [SerializeField] UiButton resetButton;
+    [SerializeField] UiButton disconnectButton;
     Dictionary<GuiButtonTypeTEMP, bool> isPressed = new Dictionary<GuiButtonTypeTEMP, bool>();
 
 
@@ -40,12 +42,14 @@ public class SimpleGui : MonoBehaviour
         leftButton.OnUp += Button_OnUp;
         rightButton.OnUp += Button_OnUp;
         resetButton.OnUp += Button_OnUp;
+        disconnectButton.OnUp += Button_OnUp;
 
         upButton.OnDown += Button_OnDown;
         downButton.OnDown += Button_OnDown;
         leftButton.OnDown += Button_OnDown;
         rightButton.OnDown += Button_OnDown;
         resetButton.OnDown += Button_OnDown;
+        disconnectButton.OnDown += Button_OnDown;
 
     }
 
@@ -67,11 +71,15 @@ public class SimpleGui : MonoBehaviour
         }
         else if (button == rightButton)
         {
-            key = (GuiButtonTypeTEMP.Right);   
+            key = (GuiButtonTypeTEMP.Right);
         }
         else if (button == resetButton)
         {
             key = (GuiButtonTypeTEMP.Reset);
+        }
+        else if (button == disconnectButton)
+        {
+            key = (GuiButtonTypeTEMP.Disconnect);
         }
 
         if (key != GuiButtonTypeTEMP.None)
@@ -98,11 +106,15 @@ public class SimpleGui : MonoBehaviour
         }
         else if (button == rightButton)
         {
-            key = (GuiButtonTypeTEMP.Right);   
+            key = (GuiButtonTypeTEMP.Right);
         }
         else if (button == resetButton)
         {
             key = (GuiButtonTypeTEMP.Reset);
+        }
+        else if (button == disconnectButton)
+        {
+            key = (GuiButtonTypeTEMP.Disconnect);
         }
 
         if (key != GuiButtonTypeTEMP.None)

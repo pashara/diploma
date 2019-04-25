@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using System;
 
-[System.Serializable]
+[Serializable]
 public class AxleInfo
 {
     public WheelCollider leftWheelCollider;
@@ -15,19 +16,21 @@ public class AxleInfo
 }
 
 
-public class CarDriver : CustomNetworkBehaviour, ITriggerable
+public class CarDriver : MonoBehaviour, ITriggerable
 {
-    #region Helpers
-    
+    #region Events
+
+    public event Action<TriggerType> OnEnterTrigger;
 
     #endregion
 
 
 
     #region Fields
-    
+
     [SerializeField] Transform centerOfMassTransform;
-    [SerializeField] Rigidbody rigidbody;
+    [SerializeField] Rigidbody currentRigidbody;
+
 
     [SerializeField] float neededVelocityMagnitude;
     [SerializeField] float invisibleTime;
@@ -36,13 +39,13 @@ public class CarDriver : CustomNetworkBehaviour, ITriggerable
     [SerializeField] float momentMinVal;
     [SerializeField] float momentMaxVal;
     [SerializeField] AnimationCurve momentByRpmCurve;
-    
+
     [SerializeField] List<AxleInfo> axleInfos;
     [SerializeField] float maxMotorTorque;
     [SerializeField] float maxSteeringAngle;
     [SerializeField] float brakeTorque;
     [SerializeField] float decelerationForce;
-    [SerializeField] CarTrail carTrail;
+    [SerializeField] public CarTrail carTrail;
     [SerializeField] CarTrailListner carTrailListner;
 
     [SerializeField] GameObject cameraObject;
@@ -51,6 +54,8 @@ public class CarDriver : CustomNetworkBehaviour, ITriggerable
 
     float periodSvrRpc = 0.02f; //как часто сервер шлёт обновление картинки клиентам, с.
     float timeSvrRpcLast = 0; //когда последний раз сервер слал обновление картинки
+
+    bool isInitialized;
 
     #endregion
 
@@ -62,7 +67,7 @@ public class CarDriver : CustomNetworkBehaviour, ITriggerable
         }
         float sign = Mathf.Sign(rpm);
         float clampedValue = Mathf.Clamp(Mathf.Abs(rpm), rpmMinVal, rpmMaxVal);
-        
+
         float factor = (Mathf.Approximately(rpmMaxVal, rpmMinVal)) ? 1f : (clampedValue - rpmMinVal) / (rpmMaxVal - rpmMinVal);
         float evalueatedFactor = momentByRpmCurve.Evaluate(factor);
         // Debug.Log(evalueatedFactor);
@@ -70,175 +75,164 @@ public class CarDriver : CustomNetworkBehaviour, ITriggerable
     }
 
 
+    bool isLocalPlayer;
+
+    #region Properties
+
+    public bool IsLocalPlayer
+    {
+        get
+        {
+            return isLocalPlayer;
+        }
+        set
+        {
+            isLocalPlayer = value;
+            cameraObject.SetActive(isLocalPlayer);
+        }
+    }
+
+
+    public Transform MovablePart
+    {
+        get
+        {
+            return currentRigidbody.transform;
+        }
+    }
+
+
+    public Rigidbody MainRigidBody
+    {
+        get
+        {
+            return currentRigidbody;
+        }
+    }
+
+    #endregion
+
     void Awake()
     {
-        spawnPosition = rigidbody.transform.position;
+        spawnPosition = currentRigidbody.transform.position;
         carTrail.Initialize(carTrail.transform);
     }
 
-
     void OnEnable()
     {
-        rigidbody.centerOfMass = centerOfMassTransform.localPosition;
-        SimpleGui.OnUp += (a)=>
-        {
+        currentRigidbody.centerOfMass = centerOfMassTransform.localPosition;
+        SimpleGui.OnUp += (a) => {
             if (a == GuiButtonTypeTEMP.Reset)
             {
-                Respawn();
+                OnEnterTrigger?.Invoke(TriggerType.Trail);
+            }
+            if (a == GuiButtonTypeTEMP.Disconnect)
+            {
+                GameManager.Instance.NetworkManager.StopClient();
+                GameManager.Instance.NetworkManager.StopHost();
             }
         };
     }
-    public void ApplyLocalPositionToVisuals (AxleInfo axleInfo)
+
+
+    public void ApplyLocalPositionToVisuals(AxleInfo axleInfo)
     {
         Vector3 position;
         Quaternion rotation;
-        axleInfo.leftWheelCollider.GetWorldPose (out position, out rotation);
+        axleInfo.leftWheelCollider.GetWorldPose(out position, out rotation);
         axleInfo.leftWheelMesh.transform.position = position;
-        axleInfo.rightWheelCollider.GetWorldPose (out position, out rotation);
+        axleInfo.rightWheelCollider.GetWorldPose(out position, out rotation);
         axleInfo.rightWheelMesh.transform.position = position;
-        
+
         axleInfo.rightWheelMesh.transform.rotation = rotation * Quaternion.AngleAxis(-90, Vector3.forward) * Quaternion.AngleAxis(-90, Vector3.up);
         axleInfo.leftWheelMesh.transform.rotation = rotation * Quaternion.AngleAxis(-90, Vector3.forward) * Quaternion.AngleAxis(-90, Vector3.up);
 
     }
 
 
-    public override void OnStartLocalPlayer()
+    void FixedUpdate()
     {
-        cameraObject.SetActive(IsLocalPlayer);
-    }
-
-
-    void FixedUpdate ()
-    {
-        if (IsLocalPlayer)
+        if (isInitialized)
         {
-            float motor = -maxMotorTorque * InputAdapter.Instance.VerticalInput();// Input.GetAxis ("Vertical");
-            float steering = maxSteeringAngle * InputAdapter.Instance.HorizontalInput();// Input.GetAxis ("Horizontal");
-            for (int i = 0; i < axleInfos.Count; i++)
+            if (IsLocalPlayer)
             {
-                if (axleInfos [i].steering)
+                float motor = -maxMotorTorque * InputAdapter.Instance.VerticalInput();
+                float steering = maxSteeringAngle * InputAdapter.Instance.HorizontalInput();
+                for (int i = 0; i < axleInfos.Count; i++)
                 {
-                    Steering (axleInfos [i], steering);
+                    if (axleInfos[i].steering)
+                    {
+                        Steering(axleInfos[i], steering);
+                    }
+                    if (axleInfos[i].motor)
+                    {
+                        Acceleration(axleInfos[i], motor);
+                    }
+                    if (Input.GetKey(KeyCode.Space))
+                    {
+                        Brake(axleInfos[i]);
+                    }
+                    ApplyLocalPositionToVisuals(axleInfos[i]);
                 }
-                if (axleInfos [i].motor)
-                {
-                    Acceleration (axleInfos [i], motor);
-                }
-                if (Input.GetKey (KeyCode.Space))
-                {
-                    Brake (axleInfos [i]);
-                } 
-                ApplyLocalPositionToVisuals (axleInfos [i]);
-            }
+                
 
-
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                Respawn();
-            }
-
-            CmdUpdatePlayerPositionSettings();
-            carTrailListner.CheckCollision();
-
-            if (invisibleTimer >= invisibleTime)
-            {
-                if(rigidbody.velocity.magnitude < neededVelocityMagnitude)
-                {
-                    Respawn();
-                }
-            }
-            invisibleTimer += Time.fixedDeltaTime;
-        }
-        else if (CurrentClientType == ClientType.Server)
-        {
-
-            if (timeSvrRpcLast + periodSvrRpc < Time.time)
-            {
-                RpcSetPlayerSettings(rigidbody.position, rigidbody.rotation.eulerAngles, rigidbody.velocity);
-                timeSvrRpcLast = Time.time;
+                carTrailListner.CheckCollision();
+                
+                invisibleTimer += Time.fixedDeltaTime;
             }
         }
     }
 
 
-    Vector3 currentPlayerPosition;
-    Vector3 currentPlayerRotation;
-    Vector3 currentPlayerVelocity;
+    
 
 
-    [Command(channel = 0)]
-    void CmdUpdatePlayerPositionSettings()
+    #region Public methods
+
+    public void Initialize()
     {
-        if (CurrentClientType == ClientType.Server)
-        {
-            currentPlayerPosition = rigidbody.position;
-            currentPlayerRotation = rigidbody.rotation.eulerAngles;
-            currentPlayerVelocity = rigidbody.velocity;
-        }
+        isInitialized = true;
     }
+    
 
 
-    // [ClientRpc(channel = 0)]
-    void RpcSetPlayerSettings(Vector3 position, Vector3 rotation, Vector3 velocity)
+    public void Deinitialize()
     {
-        Debug.Log("RpcSetPlayerSettings");
-        if (CurrentClientType == ClientType.Client)
-        {
-            Debug.Log("RpcSetPlayerSettings_Client");
-            rigidbody.position = position;
-            rigidbody.rotation =Quaternion.Euler(rotation);
-            rigidbody.velocity = velocity;
-        }
+        isInitialized = false;
     }
-
-
-    void Respawn()
-    {
-        invisibleTimer = 0f;
-        carTrail.DestroyTrail();
-        carTrail.Initialize(carTrail.transform);
-        rigidbody.position = spawnPosition;
-        rigidbody.rotation = Quaternion.identity;
-        rigidbody.velocity = Vector3.zero;
-    }
-
-
-
+    #endregion
 
     #region LocalPlayerInfo
 
-    private void Acceleration (AxleInfo axleInfo, float motor)
+    private void Acceleration(AxleInfo axleInfo, float motor)
     {
         if (motor != 0f)
         {
             axleInfo.leftWheelCollider.brakeTorque = 0;
             axleInfo.rightWheelCollider.brakeTorque = 0;
 
-            axleInfo.leftWheelCollider.motorTorque = (Mathf.Sign(motor)) * momentByRpm(axleInfo.leftWheelCollider.rpm);//motor
-            axleInfo.rightWheelCollider.motorTorque = (Mathf.Sign(motor)) * momentByRpm(axleInfo.rightWheelCollider.rpm);//motor
-        } else
+            axleInfo.leftWheelCollider.motorTorque = (Mathf.Sign(motor)) * momentByRpm(axleInfo.leftWheelCollider.rpm); //motor
+            axleInfo.rightWheelCollider.motorTorque = (Mathf.Sign(motor)) * momentByRpm(axleInfo.rightWheelCollider.rpm); //motor
+        }
+        else
         {
-            Deceleration (axleInfo);
+            Deceleration(axleInfo);
         }
     }
 
-
-    private void Deceleration (AxleInfo axleInfo)
+    private void Deceleration(AxleInfo axleInfo)
     {
         axleInfo.leftWheelCollider.brakeTorque = decelerationForce;
         axleInfo.rightWheelCollider.brakeTorque = decelerationForce;
     }
 
-
-    private void Steering (AxleInfo axleInfo, float steering)
+    private void Steering(AxleInfo axleInfo, float steering)
     {
         axleInfo.leftWheelCollider.steerAngle = steering;
         axleInfo.rightWheelCollider.steerAngle = steering;
     }
 
-
-    private void Brake (AxleInfo axleInfo)
+    private void Brake(AxleInfo axleInfo)
     {
         axleInfo.leftWheelCollider.brakeTorque = brakeTorque;
         axleInfo.rightWheelCollider.brakeTorque = brakeTorque;
@@ -247,50 +241,18 @@ public class CarDriver : CustomNetworkBehaviour, ITriggerable
     #endregion
 
 
-    
-    #region Debug GUI
-
-    // float time = 0f;
-    // string result = "";
-    // float outHeight = 0f;
-    
-    // void OnGUI () {
-
-    //     if (time > 0.2f)
-    //     {
-    //         result = "";
-    //         float oneHeight = 50f;
-    //         outHeight = 0f;
-    //         // Make a background box
-    //         axleInfos.ForEach((item) =>
-    //         {
-    //             result += $"{item.leftWheelCollider.name}:{(int)item.leftWheelCollider.rpm,6} \n";
-    //             result += $"{item.rightWheelCollider.name}:{(int)item.rightWheelCollider.rpm,6} \n";
-    //             outHeight += 2f * oneHeight;
-    //         });
-    //         time = 0f;
-    //     }
-    //     GUI.Box(new Rect(10,10,1000,outHeight), result);
-        
-    //     time += Time.deltaTime;
-    // }
-
-    #endregion
-
-
-
     #region ITriggerable interface
 
     public void OnTriggerEnter(TriggerType triggerType, ITrigger triggerObject)
     {
-        switch(triggerType)
+        switch (triggerType)
         {
             case TriggerType.Trail:
-                Respawn();
-            break;
+                OnEnterTrigger?.Invoke(TriggerType.Trail);
+                break;
 
             default:
-            break;
+                break;
         }
     }
 
