@@ -31,41 +31,29 @@ public class AutentifiationScreen : BaseScreen
         StartAuthAction();
     }
 
-
-
-
-
+    
     void StartAuthAction()
     {
-        StartCoroutine(LoadDataFromUrl($"http://serw/site/user-info?id={loginField.text}"));
-    }
-
-
-    IEnumerator LoadDataFromUrl(string url)
-    {
-        UnityWebRequest request = UnityWebRequest.Get(url);
-        yield return request.SendWebRequest();
-
-        if (!request.isHttpError && !request.isNetworkError)
+        string requestUri = $"{GlobalServerManager.Instance.AuthURI}?id={loginField.text}";
+        GlobalServerManager.Instance.LoadDataFromUrl(requestUri, (isGood, dataString) =>
         {
-            var data = JsonUtility.FromJson<GlobalResponseUserData>(request.downloadHandler.text);
-            GameManager.Instance.UserData = data.data;
-
-            GuiManager.Instance.HideScreen(ScreenType.AutentificationScreen, true, (loginScreen) =>
+            if (isGood)
             {
-
-                GuiManager.Instance.ShowScreen(ScreenType.MainMenu, true, (menuScreen) =>
+                var data = JsonUtility.FromJson<GlobalResponseUserData>(dataString);
+                GameManager.Instance.UserData = data.data;
+                GuiManager.Instance.HideScreen(ScreenType.AutentificationScreen, true, (loginScreen) =>
                 {
-                    (menuScreen as StartScreen).Initialize(data.data);
+                    GuiManager.Instance.ShowScreen(ScreenType.MainMenu, true, (menuScreen) =>
+                    {
+                        (menuScreen as StartScreen).Initialize(data.data);
+                    });
                 });
-            });
-        }
-        else
-        {
-            Debug.LogErrorFormat("error request [{0}, {1}]", url, request.error);
-        }
-        request.Dispose();
+            }
+            else
+            {
+                Debug.Log("No internet");
+            }
+        });
     }
-
 
 }

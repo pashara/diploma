@@ -14,9 +14,16 @@ public enum GameState
 
 public class GameManager : MonoBehaviour
 {
-    [SerializeField] NetworkManager networkManager;
+    #region Fields
 
+    [SerializeField] NetworkManager networkManager;
     [SerializeField] List<InitializableMonobehaviour> managers;
+
+    #endregion
+
+
+
+    #region Properties
 
     public static GameManager Instance
     {
@@ -39,6 +46,11 @@ public class GameManager : MonoBehaviour
         set;
     }
 
+    #endregion
+
+
+
+    #region Unity lifecycle
 
     private void Awake()
     {
@@ -52,4 +64,48 @@ public class GameManager : MonoBehaviour
 
         GuiManager.Instance.ShowScreen(ScreenType.AutentificationScreen);
     }
+
+
+    void OnEnable()
+    {
+        MyNetworkManager.OnStart += MyNetworkManager_OnStart;
+        MyNetworkManager.OnStop += MyNetworkManager_OnStop;
+    }
+
+
+    void OnDisable()
+    {
+        MyNetworkManager.OnStart -= MyNetworkManager_OnStart;
+        MyNetworkManager.OnStop -= MyNetworkManager_OnStop;
+    }
+
+    #endregion
+
+
+
+    #region Event handlers
+
+    private void MyNetworkManager_OnStop(MyNetworkManager.HostType obj)
+    {
+        GuiManager.Instance.HideScreen(ScreenType.GameScreen, true, (screen) =>
+        {
+            GuiManager.Instance.ShowScreen(ScreenType.MainMenu, true, (menuScreen) =>
+            {
+                (menuScreen as StartScreen).Initialize(GameManager.Instance.UserData);
+            });
+        });
+    }
+
+    private void MyNetworkManager_OnStart(MyNetworkManager.HostType obj)
+    {
+        GuiManager.Instance.HideScreen(ScreenType.MainMenu, true, (screen) =>
+        {
+            GuiManager.Instance.ShowScreen(ScreenType.GameScreen, true, (gameScreen) =>
+            {
+                (gameScreen as GameScreen).Initialize();
+            });
+        });
+    }
+
+    #endregion
 }

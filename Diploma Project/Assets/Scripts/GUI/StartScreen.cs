@@ -52,28 +52,14 @@ public class StartScreen : BaseScreen
     public void Initialize(GlobalUserData data)
     {
         usernameLabel.text = data.user_name;
-        StartCoroutine(SetImage(image, data.user_avatar));
-    }
-
-
-    IEnumerator SetImage(Image image, string url)
-    {
-        UnityWebRequest request = UnityWebRequestTexture.GetTexture(url);
-        yield return request.SendWebRequest();
-
-        if (request.isNetworkError || request.isHttpError)
+        GlobalServerManager.Instance.LoadTexture(data.user_avatar, (isSuccess, texture) =>
         {
-            Debug.Log(request.error);
-        }
-        else
-        {
-            Texture myTexture = ((DownloadHandlerTexture)request.downloadHandler).texture;
-            image.canvasRenderer.GetMaterial().mainTexture = myTexture;
+            image.canvasRenderer.GetMaterial().mainTexture = texture;
 
-            Sprite s = Sprite.Create(myTexture as Texture2D, new Rect(0, 0, myTexture.width, myTexture.height),
+            Sprite s = Sprite.Create(texture as Texture2D, new Rect(0, 0, texture.width, texture.height),
                 Vector2.zero, 1f);
             image.sprite = s;
-
-        }
+        });
     }
+    
 }

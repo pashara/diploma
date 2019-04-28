@@ -2,45 +2,62 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using System;
 
 
 public class Player : CustomNetworkBehaviour
 {
+    #region Fields
+
+    const int initialLifes = 4;
+    public static event Action<Player> OnPlayerCreated;
+    public static event Action<Player> OnPlayerDestroy;
+
     [SerializeField] NetworkIdentity networkIdentity;
     [SerializeField] NetworkTransform networkTransform;
     [SerializeField] NetworkTransformChild networkTransformChild;
     [SerializeField] CarDriver prefab;
 
-
-    //[SyncVar] string username;
-    [SyncVar] int level;
-    //[SyncVar(hook = "OnPointsChanged")] int points;
-
-
-    //public int Points
-    //{
-    //    get
-    //    {
-    //        return points;
-    //    }
-    //    set
-    //    {
-    //        points = value;
-    //    }
-    //}
-
-
-    //void OnPointsChanged(int points)
-    //{
-
-    //}
-
-
-
     [SerializeField] CarDriver currentCarDriver;
 
     Vector3 spawnPosition;
 
+    #endregion
+
+
+    #region Properties
+
+    public CarDriver CarDriver
+    {
+        get
+        {
+            return currentCarDriver;
+        }
+    }
+
+    #endregion
+
+
+
+
+
+    public override void OnDeserialize(NetworkReader reader, bool initialState)
+    {
+        base.OnDeserialize(reader, initialState);
+    }
+
+
+    private void Awake()
+    {
+        OnPlayerCreated?.Invoke(this);
+        Initialize();
+    }
+
+
+    private void OnDestroy()
+    {
+        OnPlayerDestroy?.Invoke(this);
+    }
 
     public void Initialize()
     {
@@ -83,19 +100,68 @@ public class Player : CustomNetworkBehaviour
 
     public override void OnStartLocalPlayer()
     {
+        playerID = GameManager.Instance.UserData.user_id;
+        OnPlayerIDChanged(playerID);
         currentCarDriver.IsLocalPlayer = true;
     }
 
+
     public override void OnStartClient()
     {
-        Initialize();
-    }
+        OnPlayerIDChanged(playerID);
 
+        playerPoints = initialLifes;
+        OnPlayerPointsChanged(playerPoints);
+    }
 
 
     private void CurrentCarDriver_OnEnterTrigger(TriggerType obj)
     {
-        Respawn();
+        if (TriggerType.Trail == obj)
+        {
+            playerPoints--;
+            OnPlayerPointsChanged(playerPoints);
+            Respawn();
+        }
+    }
+    
+
+
+    [SyncVar(hook = "OnPlayerIDChanged")] public int playerID;
+    [SyncVar(hook = "OnPlayerPointsChanged")] public int playerPoints;
+
+    void OnPlayerIDChanged(int newValue)
+    {
+        CmdSetIdOnClients(newValue);
+    }
+
+    void OnPlayerPointsChanged(int newValue)
+    {
+        CmdSetPointsOnClients(newValue);
+    }
+
+
+    // function called on the server.
+    [Command]
+    private void CmdSetIdOnClients(int idValue)
+    {
+        RpcSetIdOnClients(idValue);
+    }
+    [Command]
+    private void CmdSetPointsOnClients(int points)
+    {
+        RpcSetPointsOnClients(points);
+    }
+
+    [ClientRpc]
+    private void RpcSetIdOnClients(int idValue)
+    {
+        playerID = idValue;
+    }
+    [ClientRpc]
+    private void RpcSetPointsOnClients(int points)
+    {
+        playerPoints = points;
     }
 
 }

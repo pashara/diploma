@@ -4,6 +4,7 @@ using UnityEngine;
 
 public abstract class InitializableMonobehaviour : MonoBehaviour
 {
+
     public abstract void Initialize();
 
 

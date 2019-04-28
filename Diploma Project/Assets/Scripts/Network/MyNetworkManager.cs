@@ -1,13 +1,38 @@
 ﻿using System.Collections.Generic;
 using System.Text;
-
+using System;
 using UnityEngine;
 using UnityEngine.Networking;
 
+
 public class MyNetworkManager : NetworkManager
 {
+    #region Nested types
 
-    public List<Player> players = new List<Player>();
+    public enum HostType
+    {
+        None = 0,
+        Host = 1,
+        Server = 2,
+        Client = 3,
+    }
+
+    #endregion
+
+
+    #region Fields
+
+    public static event Action<HostType> OnStart;
+    public static event Action<HostType> OnStop;
+    public static event Action<Player> OnRemovePlayer;
+
+    public Dictionary<NetworkConnection, Player> players = new Dictionary<NetworkConnection, Player>();
+
+    #endregion
+
+
+
+    #region Properties
 
     public static MyNetworkManager Instance
     {
@@ -15,10 +40,40 @@ public class MyNetworkManager : NetworkManager
         private set;
     }
 
+    List<Player> playersAll = new List<Player>();
+    public List<Player> Players
+    {
+        get
+        {
+            return playersAll;
+        }
+    }
+
+    #endregion
+
+
+
+    #region Unity lifecycle
+
     private void Awake()
     {
         Instance = this;
     }
+
+
+    void OnEnable()
+    {
+        Player.OnPlayerCreated += Player_OnPlayerCreated;
+        Player.OnPlayerDestroy += Player_OnPlayerDestroy;
+    }
+
+
+    void OnDisable()
+    {
+        Player.OnPlayerCreated += Player_OnPlayerCreated;
+        Player.OnPlayerDestroy += Player_OnPlayerDestroy;
+    }
+
 
     public override void OnServerAddPlayer(NetworkConnection conn, short playerControllerId)
     {
@@ -31,7 +86,7 @@ public class MyNetworkManager : NetworkManager
             //{
             GameObject player = Instantiate(playerPrefab, startPositions[currentPlayersCount - 1].position, Quaternion.identity);
             NetworkServer.AddPlayerForConnection(conn, player, playerControllerId);
-            players.Add(player.GetComponent<Player>());
+            players.Add(conn, player.GetComponent<Player>());
             //}
         //else
         //{
@@ -40,57 +95,62 @@ public class MyNetworkManager : NetworkManager
     }
 
 
+    public override void OnServerRemovePlayer(NetworkConnection conn, PlayerController player)
+    {
+        Player currentPlayer;
+        if (players.TryGetValue(conn, out currentPlayer))
+        {
+            players.Remove(conn);
+        }
+
+        OnRemovePlayer?.Invoke(currentPlayer);
+        base.OnServerRemovePlayer(conn, player);
+    }
+
 
     public override void OnStartHost()
     {
         base.OnStartHost();
-        ShowGameUI();
+        OnStart?.Invoke(HostType.Host);
     }
 
 
     public override void OnStartClient(NetworkClient client)
     {
         base.OnStartClient(client);
-        ShowGameUI();
+        OnStart?.Invoke(HostType.Client);
     }
 
 
     public override void OnStopHost()
     {
         base.OnStopHost();
-        HideGameUI();
+        OnStop?.Invoke(HostType.Host);
     }
 
 
     public override void OnStopClient()
     {
         base.OnStopClient();
-        HideGameUI();
+        OnStop?.Invoke(HostType.Client);
     }
 
+    #endregion
 
-    void ShowGameUI()
+
+
+    #region Event handlers
+
+    private void Player_OnPlayerDestroy(Player obj)
     {
-        Debug.Log("Show game UI");
-        GuiManager.Instance.HideScreen(ScreenType.MainMenu, true, (screen) =>
-        {
-            GuiManager.Instance.ShowScreen(ScreenType.GameScreen, true, (gameScreen) =>
-            {
-                (gameScreen as GameScreen).Initialize();
-            });
-        });
+        playersAll.Remove(obj);
     }
 
-
-    void HideGameUI()
+    private void Player_OnPlayerCreated(Player obj)
     {
-        Debug.Log("HideGameUI");
-        GuiManager.Instance.HideScreen(ScreenType.GameScreen, true, (screen) =>
-        {
-            GuiManager.Instance.ShowScreen(ScreenType.MainMenu, true, (menuScreen) =>
-            {
-                (menuScreen as StartScreen).Initialize(GameManager.Instance.UserData);
-            });
-        });
+        playersAll.Add(obj);
     }
+
+    #endregion
+
 }

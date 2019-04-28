@@ -318,8 +318,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   centerOfMassTransform: {fileID: 121}
   currentRigidbody: {fileID: 188}
-  neededVelocityMagnitude: 0.5
-  invisibleTime: 200
+  neededVelocityMagnitude: 1
+  invisibleTime: 10
   rpmMinVal: 0
   rpmMaxVal: 2000
   momentMinVal: 300
@@ -1016,7 +1016,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   material: {fileID: 2100000, guid: 9f5a63f2e9adaa7448a7d06e8281792e, type: 2}
-  lifeTime: 10
+  lifeTime: 4
   coneCoef: 0
   dots:
   - {fileID: 141}
