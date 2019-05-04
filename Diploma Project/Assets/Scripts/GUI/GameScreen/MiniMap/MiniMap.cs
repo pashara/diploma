@@ -27,6 +27,7 @@ namespace GameScreenItems
 
         void UpdateVisual()
         {
+            return;
             List<Player> allPlayersInfo = MyNetworkManager.Instance.Players;
             MapPlayerInfo[] info = new MapPlayerInfo[allPlayersInfo.Count];
             

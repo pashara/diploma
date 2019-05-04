@@ -13,6 +13,7 @@ namespace GameScreenItems
 
         public void CustomUpdate(float deltaTime)
         {
+            return;
             List<Player> players = MyNetworkManager.Instance.Players;
 
             string result = "";

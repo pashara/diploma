@@ -16,7 +16,8 @@ public class GameManager : MonoBehaviour
 {
     #region Fields
 
-    [SerializeField] NetworkManager networkManager;
+    [SerializeField] string gameVersion;
+    [SerializeField] CustomNetworkManager networkManager;
     [SerializeField] List<InitializableMonobehaviour> managers;
 
     #endregion
@@ -32,7 +33,7 @@ public class GameManager : MonoBehaviour
     }
 
 
-    public NetworkManager NetworkManager
+    public CustomNetworkManager NetworkManager
     {
         get
         {
@@ -40,10 +41,20 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
     public GlobalUserData UserData
     {
         get;
         set;
+    }
+
+
+    public string GameVersion
+    {
+        get
+        {
+            return gameVersion;
+        }
     }
 
     #endregion
@@ -55,6 +66,8 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+
+        networkManager.Initialize();
 
         managers.ForEach((item) =>
         {
@@ -68,15 +81,15 @@ public class GameManager : MonoBehaviour
 
     void OnEnable()
     {
-        MyNetworkManager.OnStart += MyNetworkManager_OnStart;
-        MyNetworkManager.OnStop += MyNetworkManager_OnStop;
+        CustomNetworkManager.OnStart += MyNetworkManager_OnStart;
+        CustomNetworkManager.OnStop += MyNetworkManager_OnStop;
     }
 
 
     void OnDisable()
     {
-        MyNetworkManager.OnStart -= MyNetworkManager_OnStart;
-        MyNetworkManager.OnStop -= MyNetworkManager_OnStop;
+        CustomNetworkManager.OnStart -= MyNetworkManager_OnStart;
+        CustomNetworkManager.OnStop -= MyNetworkManager_OnStop;
     }
 
     #endregion

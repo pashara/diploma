@@ -39,13 +39,17 @@ public class StartScreen : BaseScreen
 
     void StartServerButton_OnClick()
     {
-        GameManager.Instance.NetworkManager.networkAddress = serverAddressInput.text;
-        GameManager.Instance.NetworkManager.StartHost();
+
+        CustomNetworkManager.Instance.JoinLobby("Lobbi");
+
+        //GameManager.Instance.NetworkManager.networkAddress = serverAddressInput.text;
+        //GameManager.Instance.NetworkManager.StartHost();
     }
 
     void ConnectButton_OnClick()
     {
-        GameManager.Instance.NetworkManager.StartClient();
+        CustomNetworkManager.Instance.JoinLobby("Lobbi");
+        //GameManager.Instance.NetworkManager.StartClient();
     }
 
 

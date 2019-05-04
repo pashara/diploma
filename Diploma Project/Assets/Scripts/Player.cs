@@ -5,22 +5,22 @@ using UnityEngine.Networking;
 using System;
 
 
-public class Player : CustomNetworkBehaviour
+
+
+public class Player : Photon.PunBehaviour
 {
     #region Fields
 
     const int initialLifes = 4;
     public static event Action<Player> OnPlayerCreated;
     public static event Action<Player> OnPlayerDestroy;
-
-    [SerializeField] NetworkIdentity networkIdentity;
-    [SerializeField] NetworkTransform networkTransform;
-    [SerializeField] NetworkTransformChild networkTransformChild;
+    
     [SerializeField] CarDriver prefab;
 
     [SerializeField] CarDriver currentCarDriver;
 
     Vector3 spawnPosition;
+    float syncDuration;
 
     #endregion
 
@@ -38,40 +38,57 @@ public class Player : CustomNetworkBehaviour
     #endregion
 
 
-
-
-
-    public override void OnDeserialize(NetworkReader reader, bool initialState)
+    void Awake()
     {
-        base.OnDeserialize(reader, initialState);
-    }
-
-
-    private void Awake()
-    {
-        OnPlayerCreated?.Invoke(this);
         Initialize();
+        OnPlayerCreated?.Invoke(this);
     }
 
 
-    private void OnDestroy()
+    void Update()
+    {
+        float detlaTime = Time.deltaTime;
+        if (!photonView.isMine)
+        {
+            syncDuration += detlaTime * 15f;
+            float factor = syncDuration;
+            if (Vector3.Distance(oldPosition, newPosition) > 2f)
+            {
+                factor = 1f;
+            }
+            
+            CarDriver.MainRigidBody.position = Vector3.Lerp(oldPosition, newPosition, factor);
+            CarDriver.MainRigidBody.velocity = Vector3.Lerp(oldVelocity, newVelocity, factor);
+            CarDriver.MainRigidBody.rotation = Quaternion.Lerp(oldRotation, newRotation, factor);
+        }
+    }
+
+
+    void OnDestroy()
     {
         OnPlayerDestroy?.Invoke(this);
     }
 
+    
+
+
     public void Initialize()
     {
+        Debug.Log("Initialize");
         spawnPosition = transform.position;
         currentCarDriver = Instantiate<CarDriver>(prefab);
         currentCarDriver.transform.SetParent(transform);
         currentCarDriver.transform.localPosition = Vector3.zero;
-        networkTransformChild.target = currentCarDriver.MovablePart;
         currentCarDriver.Initialize();
-        networkIdentity.enabled = true;
-        networkTransform.enabled = true;
-        networkTransformChild.enabled = true;
 
         currentCarDriver.OnEnterTrigger += CurrentCarDriver_OnEnterTrigger;
+
+
+        if (photonView.isMine)
+        {
+            playerID = GameManager.Instance.UserData.user_id;
+            currentCarDriver.IsLocalPlayer = true;
+        }
     }
 
 
@@ -80,9 +97,6 @@ public class Player : CustomNetworkBehaviour
         currentCarDriver.Deinitialize();
         Destroy(currentCarDriver);
         currentCarDriver = null;
-        networkIdentity.enabled = false;
-        networkTransform.enabled = false;
-        networkTransformChild.enabled = false;
 
         currentCarDriver.OnEnterTrigger -= CurrentCarDriver_OnEnterTrigger;
     }
@@ -98,20 +112,38 @@ public class Player : CustomNetworkBehaviour
     }
 
 
-    public override void OnStartLocalPlayer()
+    bool isSync = false;
+    Vector3 oldPosition = Vector3.zero;
+    Vector3 newPosition = Vector3.zero;
+
+    Vector3 oldVelocity = Vector3.zero;
+    Vector3 newVelocity = Vector3.zero;
+
+    Quaternion oldRotation = Quaternion.identity;
+    Quaternion newRotation = Quaternion.identity;
+
+    void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
     {
-        playerID = GameManager.Instance.UserData.user_id;
-        OnPlayerIDChanged(playerID);
-        currentCarDriver.IsLocalPlayer = true;
-    }
+        Vector3 position = CarDriver.MainRigidBody.position;
+        Quaternion rotation = CarDriver.MainRigidBody.rotation;
+        Vector3 velocity = CarDriver.MainRigidBody.velocity;
 
+        stream.Serialize(ref position);
+        stream.Serialize(ref rotation);
 
-    public override void OnStartClient()
-    {
-        OnPlayerIDChanged(playerID);
+        if (stream.isReading)
+        {
+            isSync = true;
+            syncDuration = 0f;
+            oldPosition = CarDriver.MainRigidBody.position;
+            oldRotation = CarDriver.MainRigidBody.rotation;
+            oldVelocity = CarDriver.MainRigidBody.velocity;
 
-        playerPoints = initialLifes;
-        OnPlayerPointsChanged(playerPoints);
+            newPosition = position;
+            newRotation = rotation;
+            newVelocity = velocity;
+        }
+
     }
 
 
@@ -120,48 +152,15 @@ public class Player : CustomNetworkBehaviour
         if (TriggerType.Trail == obj)
         {
             playerPoints--;
-            OnPlayerPointsChanged(playerPoints);
+            //OnPlayerPointsChanged(playerPoints);
             Respawn();
         }
     }
     
 
 
-    [SyncVar(hook = "OnPlayerIDChanged")] public int playerID;
-    [SyncVar(hook = "OnPlayerPointsChanged")] public int playerPoints;
-
-    void OnPlayerIDChanged(int newValue)
-    {
-        CmdSetIdOnClients(newValue);
-    }
-
-    void OnPlayerPointsChanged(int newValue)
-    {
-        CmdSetPointsOnClients(newValue);
-    }
-
-
-    // function called on the server.
-    [Command]
-    private void CmdSetIdOnClients(int idValue)
-    {
-        RpcSetIdOnClients(idValue);
-    }
-    [Command]
-    private void CmdSetPointsOnClients(int points)
-    {
-        RpcSetPointsOnClients(points);
-    }
-
-    [ClientRpc]
-    private void RpcSetIdOnClients(int idValue)
-    {
-        playerID = idValue;
-    }
-    [ClientRpc]
-    private void RpcSetPointsOnClients(int points)
-    {
-        playerPoints = points;
-    }
+    public int playerID;
+    public int playerPoints;
+    
 
 }

@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 
 
+
 public class MyNetworkManager : NetworkManager
 {
     #region Nested types
@@ -16,7 +17,6 @@ public class MyNetworkManager : NetworkManager
         Server = 2,
         Client = 3,
     }
-
     #endregion
 
 

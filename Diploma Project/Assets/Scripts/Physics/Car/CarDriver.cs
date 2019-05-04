@@ -128,8 +128,8 @@ public class CarDriver : MonoBehaviour, ITriggerable
             }
             if (a == GuiButtonTypeTEMP.Disconnect)
             {
-                GameManager.Instance.NetworkManager.StopClient();
-                GameManager.Instance.NetworkManager.StopHost();
+                //GameManager.Instance.NetworkManager.StopClient();
+                //GameManager.Instance.NetworkManager.StopHost();
             }
         };
     }
