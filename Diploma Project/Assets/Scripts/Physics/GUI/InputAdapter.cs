@@ -5,6 +5,19 @@ using UnityEngine;
 public class InputAdapter : MonoBehaviour
 {
     
+    public static bool IsMobileDevice
+    {
+        get
+        {
+            bool result = false;
+
+            #if UNITY_ANDROID || UNITY_IOS
+                result = true;
+            #endif
+
+            return result;
+        }
+    }
     public static InputAdapter Instance
     {
         get;

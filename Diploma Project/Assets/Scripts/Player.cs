@@ -21,6 +21,8 @@ public class Player : CustomNetworkBehaviour
     [SerializeField] CarDriver currentCarDriver;
 
     Vector3 spawnPosition;
+    bool shouldRespawn = false;
+    bool shouldDecreasePoints = false;
 
     #endregion
 
@@ -53,6 +55,55 @@ public class Player : CustomNetworkBehaviour
         Initialize();
     }
 
+    private void OnEnable()
+    {
+        SimpleGui.OnUp += SimpleGui_OnUp;
+    }
+
+    private void OnDisable()
+    {
+        SimpleGui.OnUp += SimpleGui_OnUp;
+    }
+
+    private void SimpleGui_OnUp(GuiButtonTypeTEMP a)
+    {
+        if (a == GuiButtonTypeTEMP.Reset)
+        {
+            CurrentCarDriver_OnEnterTriggerEvent(TriggerType.Trail);
+        }
+        if (a == GuiButtonTypeTEMP.Disconnect)
+        {
+            GameManager.Instance.NetworkManager.StopClient();
+            GameManager.Instance.NetworkManager.StopHost();
+        }
+    }
+
+    private void Update()
+    {
+        if (IsLocalPlayer)
+        {
+            if (shouldRespawn)
+            {
+                Respawn();
+            }
+
+            if (shouldDecreasePoints)
+            {
+                playerPoints--;
+                OnPlayerPointsChanged(playerPoints);
+            }
+        }
+
+        float deltaTime = Time.deltaTime;
+        currentCarDriver.CustomUpdate(deltaTime);
+    }
+
+    public void UpdateAllData()
+    {
+        CmdSetIdOnClients(playerID);
+        CmdSetPointsOnClients(playerPoints);
+    }
+    
 
     private void OnDestroy()
     {
@@ -61,17 +112,19 @@ public class Player : CustomNetworkBehaviour
 
     public void Initialize()
     {
+        shouldRespawn = false;
+        shouldDecreasePoints = false;
         spawnPosition = transform.position;
         currentCarDriver = Instantiate<CarDriver>(prefab);
         currentCarDriver.transform.SetParent(transform);
         currentCarDriver.transform.localPosition = Vector3.zero;
         networkTransformChild.target = currentCarDriver.MovablePart;
-        currentCarDriver.Initialize();
+        currentCarDriver.Initialize(this);
         networkIdentity.enabled = true;
         networkTransform.enabled = true;
         networkTransformChild.enabled = true;
 
-        currentCarDriver.OnEnterTrigger += CurrentCarDriver_OnEnterTrigger;
+        currentCarDriver.OnEnterTriggerEvent += CurrentCarDriver_OnEnterTriggerEvent;
     }
 
 
@@ -84,84 +137,121 @@ public class Player : CustomNetworkBehaviour
         networkTransform.enabled = false;
         networkTransformChild.enabled = false;
 
-        currentCarDriver.OnEnterTrigger -= CurrentCarDriver_OnEnterTrigger;
+        currentCarDriver.OnEnterTriggerEvent -= CurrentCarDriver_OnEnterTriggerEvent;
     }
 
 
-    public void Respawn()
+    public void Respawn(bool isFromIntenet = false)
     {
-        currentCarDriver.carTrail.DestroyTrail();
-        currentCarDriver.carTrail.Initialize(currentCarDriver.carTrail.transform);
-        currentCarDriver.MainRigidBody.position = spawnPosition;
-        currentCarDriver.MainRigidBody.rotation = Quaternion.identity;
+        shouldRespawn = false;
+        shouldDecreasePoints = false;
+        currentCarDriver.MainRigidBody.transform.position = spawnPosition;
+        currentCarDriver.MainRigidBody.transform.rotation = Quaternion.identity;
         currentCarDriver.MainRigidBody.velocity = Vector3.zero;
+        currentCarDriver.MainRigidBody.angularDrag = 0f;
+        currentCarDriver.MainRigidBody.angularVelocity = Vector3.zero;
+        
+
+        currentCarDriver.carTrail.DestroyTrail();
+        currentCarDriver.carTrail.Initialize(currentCarDriver.emmitTrailTransfom, this);
+        if (!isFromIntenet)
+        {
+            CmdOnPlayerRestarted();
+        }
     }
 
 
     public override void OnStartLocalPlayer()
     {
         playerID = GameManager.Instance.UserData.user_id;
-        OnPlayerIDChanged(playerID);
+        OnIdSeted?.Invoke(this, playerID);
+        UpdateAllData();
         currentCarDriver.IsLocalPlayer = true;
     }
 
 
     public override void OnStartClient()
     {
-        OnPlayerIDChanged(playerID);
-
         playerPoints = initialLifes;
         OnPlayerPointsChanged(playerPoints);
     }
 
 
-    private void CurrentCarDriver_OnEnterTrigger(TriggerType obj)
+    private void CurrentCarDriver_OnEnterTriggerEvent(TriggerType obj)
     {
-        if (TriggerType.Trail == obj)
+        if (IsLocalPlayer)
         {
-            playerPoints--;
-            OnPlayerPointsChanged(playerPoints);
-            Respawn();
+            if (TriggerType.Trail == obj)
+            {
+                shouldRespawn = true;
+                shouldDecreasePoints = true;
+            }
         }
     }
+
+    public static event Action<Player, int> OnIdSeted;
+
+
+
+    [SyncVar] public int playerID = -1;
+    [SyncVar] public int playerPoints = -1;
     
-
-
-    [SyncVar(hook = "OnPlayerIDChanged")] public int playerID;
-    [SyncVar(hook = "OnPlayerPointsChanged")] public int playerPoints;
-
-    void OnPlayerIDChanged(int newValue)
-    {
-        CmdSetIdOnClients(newValue);
-    }
 
     void OnPlayerPointsChanged(int newValue)
     {
         CmdSetPointsOnClients(newValue);
     }
 
-
-    // function called on the server.
+    
     [Command]
     private void CmdSetIdOnClients(int idValue)
     {
         RpcSetIdOnClients(idValue);
     }
+
     [Command]
     private void CmdSetPointsOnClients(int points)
     {
         RpcSetPointsOnClients(points);
     }
 
+
+    [Command]
+    private void CmdOnPlayerRestarted()
+    {
+        RpcOnPlayerRespawned();
+    }
+
+
+
+
     [ClientRpc]
     private void RpcSetIdOnClients(int idValue)
     {
-        playerID = idValue;
+        if (!IsLocalPlayer)
+        {
+            Debug.Log("Update ID " + idValue);
+            playerID = idValue;
+            OnIdSeted?.Invoke(this, playerID);
+        }
     }
     [ClientRpc]
     private void RpcSetPointsOnClients(int points)
     {
-        playerPoints = points;
+        if (!IsLocalPlayer)
+        {
+            playerPoints = points;
+        }
+    }
+
+
+    [ClientRpc]
+    private void RpcOnPlayerRespawned()
+    {
+        if (!IsLocalPlayer)
+        {
+            Respawn(true);
+        }
     }
 
 }

@@ -14,9 +14,7 @@ public class TrailTrigger : MonoBehaviour, ITrigger
 
     public GameObject GameObject
     {
-        get
-        {
-            return this.gameObject;
-        }
+        get;
+        set;
     }
 }

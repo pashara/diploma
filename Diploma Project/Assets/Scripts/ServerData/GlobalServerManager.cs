@@ -35,6 +35,15 @@ public class GlobalServerManager : InitializableMonobehaviour
         }
     }
 
+
+    public string PlayeInfoURI
+    {
+        get
+        {
+            return $"{serverUrl}{authUrl}";
+        }
+    }
+
     #endregion
 
 
@@ -53,9 +62,9 @@ public class GlobalServerManager : InitializableMonobehaviour
     }
 
 
-    public void LoadTexture(string url, Action<bool, Texture> callback)
+    public Coroutine LoadTexture(string url, Action<bool, Texture> callback)
     {
-        StartCoroutine(IELoadTexture(url, callback));
+        return StartCoroutine(IELoadTexture(url, callback));
     }
 
     #endregion

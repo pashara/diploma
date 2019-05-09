@@ -6,6 +6,7 @@ namespace GameScreenItems
 {
     public class MiniMapBaseItem : MonoBehaviour
     {
+        public Player playerInstance;
         // Start is called before the first frame update
         void Start()
         {

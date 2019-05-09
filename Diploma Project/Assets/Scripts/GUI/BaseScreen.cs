@@ -27,13 +27,13 @@ public class BaseScreen : MonoBehaviour
 
 
 
-    public void Show(Action<BaseScreen> onStartShowing)
+    public virtual void Show(Action<BaseScreen> onStartShowing)
     {
         onStartShowing?.Invoke(this);
     }
 
 
-    public void Hide(Action<BaseScreen> onHided)
+    public virtual void Hide(Action<BaseScreen> onHided)
     {
         onHided?.Invoke(this);
     }

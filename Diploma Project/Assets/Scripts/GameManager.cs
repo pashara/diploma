@@ -87,24 +87,30 @@ public class GameManager : MonoBehaviour
 
     private void MyNetworkManager_OnStop(MyNetworkManager.HostType obj)
     {
-        GuiManager.Instance.HideScreen(ScreenType.GameScreen, true, (screen) =>
+        if (obj == MyNetworkManager.HostType.Client)
         {
-            GuiManager.Instance.ShowScreen(ScreenType.MainMenu, true, (menuScreen) =>
+            GuiManager.Instance.HideScreen(ScreenType.GameScreen, true, (screen) =>
             {
-                (menuScreen as StartScreen).Initialize(GameManager.Instance.UserData);
+                GuiManager.Instance.ShowScreen(ScreenType.MainMenu, true, (menuScreen) =>
+                {
+                    (menuScreen as StartScreen).Initialize(GameManager.Instance.UserData);
+                });
             });
-        });
+        }
     }
 
     private void MyNetworkManager_OnStart(MyNetworkManager.HostType obj)
     {
-        GuiManager.Instance.HideScreen(ScreenType.MainMenu, true, (screen) =>
+        if (obj == MyNetworkManager.HostType.Client)
         {
-            GuiManager.Instance.ShowScreen(ScreenType.GameScreen, true, (gameScreen) =>
+            GuiManager.Instance.HideScreen(ScreenType.MainMenu, true, (screen) =>
             {
-                (gameScreen as GameScreen).Initialize();
+                GuiManager.Instance.ShowScreen(ScreenType.GameScreen, true, (gameScreen) =>
+                {
+                    (gameScreen as GameScreen).Initialize();
+                });
             });
-        });
+        }
     }
 
     #endregion

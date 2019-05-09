@@ -1,0 +1,261 @@
+#
+# Wavefront material file: v:\dropbox\turbo squid\landmarks collection\obj\football_stadium.mtl
+#
+# Converted by the PolyTrans geometry converter from Okino Computer Graphics, Inc.
+# Date/time of export: 01/31/2013 08:57:56
+#
+# Bounding box of geometry = (-164.201,14.8824,-192.755) to (154.77,70.2154,161.863).
+
+newmtl default
+	Ns 32
+	d 1
+	illum 2
+	Kd 0.4 0.4 0.4
+	Ks 0.7 0.7 0.7
+	Ka 0.3 0.3 0.3
+
+newmtl bunker
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.790588 0.759216 0.596078
+	Ks 0 0 0
+	Ka 0.296471 0.284706 0.223529
+
+newmtl columns
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.784314 0.807843 0.756863
+	Ks 0 0 0
+	Ka 0.235294 0.242353 0.227059
+	map_Kd concrete surface1.jpg
+
+newmtl concrete_under1
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.392157 0.392157 0.392157
+	Ks 0 0 0
+	Ka 0.117647 0.117647 0.117647
+	map_Kd -s 90 1 1 concrete12.jpg
+
+newmtl concrete1
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.780392 0.792157 0.776471
+	Ks 0.0780392 0.0792157 0.0776471
+	Ka 0.234118 0.237647 0.232941
+	map_Kd grycon2.jpg
+
+newmtl concrete2
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.702353 0.712941 0.698824
+	Ks 0.0780392 0.0792157 0.0776471
+	Ka 0.234118 0.237647 0.232941
+	map_Kd grycon2.jpg
+
+newmtl concrete3
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.784314 0.807843 0.756863
+	Ks 0 0 0
+	Ka 0.235294 0.242353 0.227059
+	map_Kd concrete surface1.jpg
+
+newmtl concrete4
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.780392 0.792157 0.776471
+	Ks 0.0780392 0.0792157 0.0776471
+	Ka 0.234118 0.237647 0.232941
+	map_Kd grycon2.jpg
+
+newmtl floor1
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.780392 0.792157 0.776471
+	Ks 0.0780392 0.0792157 0.0776471
+	Ka 0.234118 0.237647 0.232941
+	map_Kd grycon2.jpg
+
+newmtl floor2
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.956863 0.956863 0.956863
+	Ks 0.0956863 0.0956863 0.0956863
+	Ka 0.287059 0.287059 0.287059
+	map_Kd grycon2.jpg
+
+newmtl green
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.474902 0.617647 0.315686
+	Ks 0 0 0
+	Ka 0.203529 0.264706 0.135294
+	map_Kd grass2.jpg
+
+newmtl green2
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.370588 0.513333 0.351373
+	Ks 0 0 0
+	Ka 0.158824 0.22 0.150588
+	map_Kd grass2.jpg
+
+newmtl lights1
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.107059 0.109804 0.104314
+	Ks 0.305882 0.313726 0.298039
+	Ka 0.0458824 0.0470588 0.0447059
+
+newmtl lights2
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.494118 0.494118 0.494118
+	Ks 0 0 0
+	Ka 0.296471 0.296471 0.296471
+
+newmtl net01
+	Ns 64
+	d 0.5
+	illum 2
+	Kd 1 1 1
+	Ks 1 1 1
+	Ka 0.3 0.3 0.3
+
+newmtl paving1
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.381569 0.307451 0.167451
+	Ks 0 0 0
+	Ka 0.163529 0.131765 0.0717647
+	map_Kd pavers.jpg
+
+newmtl pitch
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.491373 0.647843 0.332157
+	Ks 0 0 0
+	Ka 0.210588 0.277647 0.142353
+	map_Kd grass2.jpg
+
+newmtl roof1
+	Ns 25
+	d 0.7
+	illum 2
+	Kd 0.941176 0.941176 0.941176
+	Ks 0 0 0
+	Ka 0.282353 0.282353 0.282353
+
+newmtl roofstructure1
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.646275 0.67451 0.680784
+	Ks 1.61569 1.68627 1.70196
+	Ka 0.242353 0.252941 0.255294
+
+newmtl roofstructure2
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.376471 0.407843 0.417255
+	Ks 0.941176 1.01961 1.04314
+	Ka 0.141176 0.152941 0.156471
+
+newmtl sceen1
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.646275 0.67451 0.680784
+	Ks 1.61569 1.68627 1.70196
+	Ka 0.242353 0.252941 0.255294
+
+newmtl sceen2
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.619608 0.619608 0.619608
+	Ks 0 0 0
+	Ka 0.185882 0.185882 0.185882
+
+newmtl sceen3
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.392157 0.392157 0.392157
+	Ks 0 0 0
+	Ka 0.117647 0.117647 0.117647
+
+newmtl seats
+	Ns 256
+	d 1
+	illum 2
+	Kd 0.790588 0.304314 0.304314
+	Ks 0.592941 0.228235 0.228235
+	Ka 0.296471 0.114118 0.114118
+
+newmtl seats2
+	Ns 256
+	d 1
+	illum 2
+	Kd 0.790588 0.73098 0.304314
+	Ks 0.592941 0.548235 0.228235
+	Ka 0.296471 0.274118 0.114118
+
+newmtl stairs1
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.784314 0.807843 0.756863
+	Ks 0 0 0
+	Ka 0.235294 0.242353 0.227059
+	map_Kd concrete surface1.jpg
+
+newmtl tiang_gol01
+	Ns 128
+	d 1
+	illum 2
+	Kd 1 1 1
+	Ks 1 1 1
+	Ka 0.3 0.3 0.3
+
+newmtl track
+	Ns 128
+	d 1
+	illum 2
+	Kd 0.780392 0.447059 0.427451
+	Ks 0 0 0
+	Ka 0.234118 0.134118 0.128235
+
+newmtl track02
+	Ns 128
+	d 1
+	illum 2
+	Kd 0.847059 0.435294 0.360784
+	Ks 0 0 0
+	Ka 0.254118 0.130588 0.108235
+
+newmtl tracklines
+	Ns 25
+	d 1
+	illum 2
+	Kd 0.784314 0.784314 0.784314
+	Ks 0 0 0
+	Ka 0.235294 0.235294 0.235294
+

@@ -12,12 +12,11 @@ namespace GameScreenItems
             public Transform playerPositionizer;
         }
 
-
         [SerializeField] float mapScale;
         [SerializeField] Vector2 minimapBounds;
         [SerializeField] Transform playersParent;
         [SerializeField] MiniMapBaseItem playerObjectPrefab;
-        Dictionary<Player, MiniMapBaseItem> playerItems = new Dictionary<Player, MiniMapBaseItem>();
+        List<MiniMapBaseItem> playerItems = new List<MiniMapBaseItem>();
 
         public void CustomUpdate(float deltaTime)
         {
@@ -25,17 +24,30 @@ namespace GameScreenItems
         }
 
 
+        void CheckPlayers(List<MiniMapBaseItem> players)
+        {
+            for (int i = 0; i < players.Count; i++)
+            {
+                if (players[i].playerInstance == null)
+                {
+                    players.RemoveAt(i);
+                    i--;
+                }
+            }
+        }
+
         void UpdateVisual()
         {
-            List<Player> allPlayersInfo = MyNetworkManager.Instance.Players;
+            List<PlayerInfo> allPlayersInfo = MyNetworkManager.Instance.Players;
+            CheckPlayers(playerItems);
             MapPlayerInfo[] info = new MapPlayerInfo[allPlayersInfo.Count];
             
             for (int i = 0; i < allPlayersInfo.Count; i++)
             {
                 MapPlayerInfo currentInfo = new MapPlayerInfo();
                 info[i] = currentInfo;
-                currentInfo.player = allPlayersInfo[i];
-                currentInfo.playerPositionizer = allPlayersInfo[i].CarDriver.MovablePart;
+                currentInfo.player = allPlayersInfo[i].instance;
+                currentInfo.playerPositionizer = allPlayersInfo[i].instance.CarDriver.MovablePart;
             }
 
 
@@ -45,9 +57,7 @@ namespace GameScreenItems
 
                 Vector3 lbPart = LevelManager.Instance.CurrentLevel.RTBoundTransform.position;
                 Vector3 rtPart = LevelManager.Instance.CurrentLevel.LBBoundTransform.position;
-
-                Debug.Log($"User {info[i].playerPositionizer.position}");
-                Debug.Log($"User {clampedPosition}");
+                
 
                 lbPart = new Vector2(lbPart.x, lbPart.z);
                 rtPart = new Vector2(rtPart.x, rtPart.z);
@@ -60,19 +70,17 @@ namespace GameScreenItems
                 Vector2 factorVector = new Vector2(xFactor, yFactor);
                 Vector2 positionOnMap = Vector2.Scale(minimapBounds, factorVector) * mapScale;
 
-                MiniMapBaseItem minimapObjectInstance;
-                if (!playerItems.TryGetValue(info[i].player, out minimapObjectInstance))
+                MiniMapBaseItem minimapObjectInstance = playerItems.Find((item) => item.playerInstance == info[i].player);
+                if (minimapObjectInstance == null)
                 {
-                    minimapObjectInstance = Instantiate<MiniMapBaseItem>(playerObjectPrefab);
-                    minimapObjectInstance.transform.SetParent(playersParent);
-                    playerItems.Add(info[i].player, minimapObjectInstance);
+                    minimapObjectInstance = Instantiate<MiniMapBaseItem>(playerObjectPrefab, playersParent);
+                    minimapObjectInstance.playerInstance = info[i].player;
+                    playerItems.Add(minimapObjectInstance);
                 }
 
                 minimapObjectInstance.transform.localPosition = positionOnMap;
                 
             }
-
-            Debug.Log("--");
         }
     }
 }

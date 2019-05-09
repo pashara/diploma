@@ -4,5 +4,5 @@ using UnityEngine;
 
 public interface ITriggerable
 {
-    void OnTriggerEnter(TriggerType triggerType, ITrigger triggerObject);
+    void OnEnterTrigger(TriggerType triggerType, ITrigger triggerObject);
 }

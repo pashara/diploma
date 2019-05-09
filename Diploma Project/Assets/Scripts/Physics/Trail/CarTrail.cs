@@ -27,6 +27,13 @@ public class CarTrail : MonoBehaviour
     bool emit = true;
 
     List<TrailPoint> points = new List<TrailPoint>();
+    [SerializeField] Vector3 colliderSize;
+    [SerializeField] Vector3 colliderCenter;
+
+
+    int collidersPoolCount = 2;
+    int addOnceToPool = 10;
+    int maxColliders = 500;
 
     GameObject trailObject;
     Mesh trailMesh;
@@ -35,7 +42,7 @@ public class CarTrail : MonoBehaviour
     Vector3 radiusVector;
     List<Vector3> vertexList;
     Quaternion quaternionStep;
-
+    Player owner;
 
     float _radius;
     bool _isInitialized;
@@ -48,9 +55,9 @@ public class CarTrail : MonoBehaviour
     Vector2[] newUV = new Vector2[5];
     int[] newTriangles = new int[5];
     Color[] colors = new Color[5];
-    MeshCollider meshCollider;
     TrailTrigger trailTrigger;
-
+    
+    List<BoxCollider> spawnedBoxColliders = new List<BoxCollider>();
     #endregion
 
 
@@ -105,61 +112,100 @@ public class CarTrail : MonoBehaviour
 
     #region Unity lifecycle
 
+    BoxCollider trailTriggerPrefab = null;
+
     void OnEnable()
     {
-        IsActiveTrail = true;
     }
 
-    void OnDisable()
+
+    void InitializeCollidersPool()
     {
-        IsActiveTrail = false;
+        for (int i = 0; i < collidersPoolCount; i++)
+        {
+            spawnedBoxColliders.Add(Instantiate<BoxCollider>(trailTriggerPrefab, transform));
+        }
     }
 
-    // [SerializeField] bool outPlayer = false;
+
+    bool AddItemsToPool()
+    {
+        bool isAdded = false;
+        if (spawnedBoxColliders.Count < maxColliders)
+        {
+            for (int i = 0; i < addOnceToPool; i++)
+            {
+                isAdded = true;
+                spawnedBoxColliders.Add(Instantiate<BoxCollider>(trailTriggerPrefab, transform));
+            }
+        }
+        return isAdded;
+    }
+    
+    
+
     int n = 10;
-    void LateUpdate()
+    [SerializeField] List<Color> colorss;
+
+    [SerializeField] float deltaAngle = 60f;
+    public void CustomUpdate(float deltaTime)
     {
-        if (!_isInitialized)
+        if (_isInitialized)
         {
-            return;
-        }
-        int numPoints = dots.Count;
-        if (Emit)
-        {
-            TrailPoint p = new TrailPoint();
-            p.basePosition = _baseAnchor.position;
-            p.circlePoints = MakeCircle();
-            p.rotationVector = _baseAnchor.rotation.eulerAngles;
-            p.timeCreated = Time.time;
-            points.Add(p);
-        }
 
-        RemoveOldPoints(points);
+            int numPoints = dots.Count;
+            if (Emit)
+            {
+                TrailPoint p = new TrailPoint();
+                p.basePosition = _baseAnchor.position;
+                p.circlePoints = MakeCircle();
+                p.rotationVector = _baseAnchor.rotation.eulerAngles;
+                p.timeCreated = Time.time;
+                points.Add(p);
+            }
 
-        if (points.Count == 0)
-        {
-            trailMesh.Clear();
-        }
+            RemoveOldPoints(points);
+
+            if (points.Count == 0)
+            {
+                trailMesh.Clear();
+            }
 
 
-        if (points.Count > 0)
-        {
-            newVertices = new Vector3[points.Count * dots.Count];
-            newUV = new Vector2[points.Count * dots.Count];
-            newTriangles = new int[points.Count * (dots.Count * 6 + 6)]; //+6
-            colors = new Color[points.Count * dots.Count];           
+            if (points.Count > 0)
+            {
+                newVertices = new Vector3[points.Count * numPoints];
+                newUV = new Vector2[points.Count * numPoints];
+                newTriangles = new int[points.Count * (numPoints * 6 + 6)]; //+6
+                colors = new Color[points.Count * numPoints];
 
-            int trianglesCounter = 0;
+                int trianglesCounter = 0;
 
-            float uRatio = 1.0f / (float)(points.Count);
-            float vRatio = 1.0f / (points.Count);
-            float colorPart = 1.0f / points.Count;
+                float uRatio = 1.0f / (float)(points.Count);
+                float vRatio = 1.0f / (points.Count);
+                float colorPart = 1.0f / points.Count;
 
-            float coneDecresCoef = 1f;//(1.0f - coneCoef) / points.Count;
+                float coneDecresCoef = 1f;//(1.0f - coneCoef) / points.Count;
 
-            Vector3[] prevPos = null;
-            
-                trianglesCounter = (numPoints ) * (points.Count) * 6 - 1;
+                Vector3[] prevPos = null;
+
+                trianglesCounter = (numPoints) * (points.Count) * 6 - 1;
+
+                List<Vector3> basePoints = new List<Vector3>();
+                basePoints.Add(points[0].basePosition);
+                for (int i = 0; i < points.Count; i++)
+                {
+                    basePoints.Add(points[i].basePosition);
+                }
+
+                List<Vector3> approximatedPositions = Qwerty(basePoints);
+
+                for (int i = 0; i < approximatedPositions.Count - 1; i++)
+                {
+                    Debug.DrawLine(approximatedPositions[i], approximatedPositions[i + 1], Color.red);
+                }
+
+
                 for (int i = points.Count - 1; i >= 0; i--)
                 {
                     TrailPoint p = points[i];
@@ -169,15 +215,14 @@ public class CarTrail : MonoBehaviour
                     for (int j = numPoints - 1; j >= 0; j--)
                     {
                         Vector3 currentPoint = p.circlePoints[j];
-                        Vector3 newPoint = Quaternion.Euler(p.rotationVector) * currentPoint + p.basePosition;// ((currentPoint) * (coneCoef + i * coneDecresCoef))  + p.basePosition;
-                        // Vector3 newPoint = ((currentPoint - p.basePosition) * (coneCoef + i * coneDecresCoef)) + p.basePosition;
+                        Vector3 newPoint = Quaternion.Euler(p.rotationVector) * currentPoint + p.basePosition;
                         newVertices[i * numPoints + j] = newPoint;
                         newUV[i * numPoints + j] = new Vector2((numPoints - j) * uRatio, (points.Count - i) * vRatio);
 
                         colors[i * numPoints + j] = curColor;
-                        
-                        if (j%n == 0)
-                        {  
+
+                        if (j % n == 0)
+                        {
                             int index = j / (numPoints - n);
                             if (prevPos != null)
                             {
@@ -187,7 +232,7 @@ public class CarTrail : MonoBehaviour
                             {
                                 prevPos = new Vector3[n];
                             }
-                            
+
                             prevPos[index] = newPoint;
                         }
                     }
@@ -214,28 +259,65 @@ public class CarTrail : MonoBehaviour
                         newTriangles[trianglesCounter--] = (i - 1) * numPoints + (numPoints - 1);
                     }
                 }
+                
+                if (approximatedPositions.Count > spawnedBoxColliders.Count)
+                {
+                    bool isAdded = false;
+                    do
+                    {
+                        isAdded = AddItemsToPool();
+                    } while (!isAdded || approximatedPositions.Count > spawnedBoxColliders.Count);
+                }
 
+                Vector3 startDrowPosition = Vector3.zero;
+                Vector3 preLastDrwPosition = Vector3.zero;
+                int collidersCount = spawnedBoxColliders.Count;
+                int lastIndex = 0;
+                Vector3 distance = Vector3.zero;
+                BoxCollider currentBoxCollider = null;
+                for (lastIndex = 0; lastIndex < approximatedPositions.Count - 1 - 1; lastIndex++)
+                {
+                    if (lastIndex <= collidersCount)
+                    {
+                        startDrowPosition = approximatedPositions[lastIndex];
+                        preLastDrwPosition = approximatedPositions[lastIndex + 1];
 
-            // for(int i = 0; i < newTriangles.Length - 1; i++)
-            // {
-            //     Debug.DrawLine(newVertices[newTriangles[i]],newVertices[newTriangles[i + 1]], Color.red);
-            // }
+                        distance = preLastDrwPosition - startDrowPosition;
+                        currentBoxCollider = spawnedBoxColliders[lastIndex];
+                        currentBoxCollider.transform.position = startDrowPosition;
+                        currentBoxCollider.transform.LookAt(preLastDrwPosition);
+                        currentBoxCollider.size = new Vector3(colliderSize.x, colliderSize.y, distance.magnitude);
+                        currentBoxCollider.center = new Vector3(colliderCenter.x, colliderCenter.y, 0.5f * distance.magnitude);
+                        currentBoxCollider.enabled = true;
+                    }
+                    else
+                    {
+                        lastIndex--;
+                        break;
+                    }
+                }
 
-            trailMesh.Clear();
+                for (int i = lastIndex; i < collidersCount; i++)
+                {
+                    if (!spawnedBoxColliders[i].enabled)
+                    {
+                        break;
+                    }
+                    spawnedBoxColliders[i].enabled = false;
+                }
 
-            trailMesh.vertices = newVertices;
-            trailMesh.uv = newUV;
-            trailMesh.colors = colors;
-            trailMesh.triangles = newTriangles;
+                trailMesh.Clear();
 
-            if (meshCollider != null)
-            {
-                meshCollider.sharedMesh = trailMesh; 
+                trailMesh.vertices = newVertices;
+                trailMesh.uv = newUV;
+                trailMesh.colors = colors;
+                trailMesh.triangles = newTriangles;
+                
+                trailMesh.RecalculateNormals();
             }
-
-            trailMesh.RecalculateNormals();
         }
     }
+
 
 
 
@@ -243,10 +325,29 @@ public class CarTrail : MonoBehaviour
 
     #region Public methods
 
-    public void Initialize(Transform anchor)
+    public void Initialize(Transform anchor, Player owner)
     {
+        this.owner = owner;
         _baseAnchor = anchor;
         _gradient = new Gradient();
+
+
+        IsActiveTrail = true;
+
+        if (trailTriggerPrefab == null)
+        {
+            GameObject colliderGameObject = new GameObject("ColliderItem");
+            colliderGameObject.transform.SetParent(transform);
+            TrailTrigger trailTrigger = colliderGameObject.AddComponent<TrailTrigger>();
+
+            trailTriggerPrefab = colliderGameObject.AddComponent<BoxCollider>();
+            trailTriggerPrefab.isTrigger = true;
+            trailTriggerPrefab.enabled = false;
+            trailTrigger.GameObject = owner.gameObject;
+        }
+
+        InitializeCollidersPool();
+
         CreateTrail();
 
         _isInitialized = true;
@@ -287,15 +388,11 @@ public class CarTrail : MonoBehaviour
         trailObject.transform.localScale = Vector3.one;
         trailObject.AddComponent(typeof(MeshFilter));
         trailObject.AddComponent(typeof(MeshRenderer));
-        trailObject.AddComponent(typeof(MeshCollider));
-        meshCollider = trailObject.GetComponent<MeshCollider>();
         trailObject.layer = Layers.TRIGGERS;
 
         trailObject.AddComponent(typeof(TrailTrigger));
         trailTrigger = trailObject.GetComponent<TrailTrigger>();
         
-        // meshCollider.convex = true;
-        // meshCollider.isTrigger = true;
 
         radiusVector = new Vector3(0.0f, _radius, 0.0f);
         vertexList = new List<Vector3>(dots.Count);
@@ -313,6 +410,13 @@ public class CarTrail : MonoBehaviour
 
     public void DestroyTrail()
     {
+        IsActiveTrail = false;
+        spawnedBoxColliders.ForEach((item) =>
+        {
+            Destroy(item.gameObject);
+        });
+        spawnedBoxColliders.Clear();
+
         Destroy(trailObject);
         Destroy(trailMesh);
         points.Clear();
@@ -333,8 +437,57 @@ public class CarTrail : MonoBehaviour
         return vertexList;
     }
 
+    [SerializeField] float deltaDistance;
+
+    List<Vector3> Qwerty(List<Vector3> positionsNew)
+    {
+        List<Vector3> approximatedPositions = new List<Vector3>();
+
+        Vector3 startDrowPosition = positionsNew[positionsNew.Count - 1];
+        Vector3 secondDrowPosition = positionsNew[positionsNew.Count - 2];
+        Vector3 lastDrowPosition = Vector3.zero;
+        Vector3 preLastDrwPosition = Vector3.zero;
+
+        approximatedPositions.Add(positionsNew[positionsNew.Count - 1]);
+        for (int i = positionsNew.Count - 1 - 2; i >= 0; i--)
+        {
+            Vector3 currentPositon = positionsNew[i];
+            Vector3 prevPosition = positionsNew[i + 1];
+
+            preLastDrwPosition = prevPosition;
+            lastDrowPosition = currentPositon;
+
+            Vector3 directionFromStartDrowToSecondPoint = (secondDrowPosition - startDrowPosition);
+            //XUI
+            if (Mathf.Approximately(directionFromStartDrowToSecondPoint.magnitude, 0f))
+            {
+                startDrowPosition = secondDrowPosition;
+                secondDrowPosition = currentPositon;
+            }
+            else
+            {
+                Vector3 directionFromStartDrowToLastPoint = (lastDrowPosition - startDrowPosition);
+
+                float angle = Vector3.Angle(directionFromStartDrowToSecondPoint, directionFromStartDrowToLastPoint);
+
+                if ((Mathf.Abs(angle) > deltaAngle || i == 0))
+                {
+                    Vector3 distance = startDrowPosition - prevPosition;
+                    if (distance.magnitude > deltaDistance)
+                    {
+                        approximatedPositions.Add(prevPosition);
+                        startDrowPosition = prevPosition;
+                        secondDrowPosition = currentPositon;
+                    }
+                }
+            }
+        }
+
+        return approximatedPositions;
+    }
+
     #endregion
-    
+
 
     #region IPoolCallback
 

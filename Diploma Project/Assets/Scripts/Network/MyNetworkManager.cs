@@ -4,6 +4,12 @@ using System;
 using UnityEngine;
 using UnityEngine.Networking;
 
+public class PlayerInfo
+{
+    public Player instance;
+    public GlobalUserData info;
+}
+
 
 public class MyNetworkManager : NetworkManager
 {
@@ -40,8 +46,8 @@ public class MyNetworkManager : NetworkManager
         private set;
     }
 
-    List<Player> playersAll = new List<Player>();
-    public List<Player> Players
+    List<PlayerInfo> playersAll = new List<PlayerInfo>();
+    public List<PlayerInfo> Players
     {
         get
         {
@@ -65,13 +71,14 @@ public class MyNetworkManager : NetworkManager
     {
         Player.OnPlayerCreated += Player_OnPlayerCreated;
         Player.OnPlayerDestroy += Player_OnPlayerDestroy;
+        Player.OnIdSeted += Player_OnIdSeted;
     }
-
 
     void OnDisable()
     {
-        Player.OnPlayerCreated += Player_OnPlayerCreated;
-        Player.OnPlayerDestroy += Player_OnPlayerDestroy;
+        Player.OnPlayerCreated -= Player_OnPlayerCreated;
+        Player.OnPlayerDestroy -= Player_OnPlayerDestroy;
+        Player.OnIdSeted -= Player_OnIdSeted;
     }
 
 
@@ -143,12 +150,44 @@ public class MyNetworkManager : NetworkManager
 
     private void Player_OnPlayerDestroy(Player obj)
     {
-        playersAll.Remove(obj);
+        playersAll.RemoveAll((i) =>
+        {
+            return i.instance == obj;
+        });
     }
 
     private void Player_OnPlayerCreated(Player obj)
     {
-        playersAll.Add(obj);
+        PlayerInfo info = new PlayerInfo
+        {
+            instance = obj
+        };
+
+        playersAll.Add(info);
+
+
+        playersAll.ForEach((item) =>
+        {
+            item.instance.UpdateAllData();
+        });
+    }
+
+
+    private void Player_OnIdSeted(Player playerInstance, int playerId)
+    {
+        string requestUri = $"{GlobalServerManager.Instance.PlayeInfoURI}?id={playerId}";
+        GlobalServerManager.Instance.LoadDataFromUrl(requestUri, (isGood, dataString) =>
+        {
+            if (isGood)
+            {
+                var data = JsonUtility.FromJson<GlobalResponseUserData>(dataString);
+                playersAll.Find((item) => item.instance == playerInstance).info = data.data;
+            }
+            else
+            {
+                Debug.Log("No internet");
+            }
+        });        
     }
 
     #endregion

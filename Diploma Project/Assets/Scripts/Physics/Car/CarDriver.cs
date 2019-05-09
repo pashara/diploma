@@ -20,7 +20,7 @@ public class CarDriver : MonoBehaviour, ITriggerable
 {
     #region Events
 
-    public event Action<TriggerType> OnEnterTrigger;
+    public event Action<TriggerType> OnEnterTriggerEvent;
 
     #endregion
 
@@ -46,6 +46,8 @@ public class CarDriver : MonoBehaviour, ITriggerable
     [SerializeField] float brakeTorque;
     [SerializeField] float decelerationForce;
     [SerializeField] public CarTrail carTrail;
+
+    [SerializeField] public Transform emmitTrailTransfom;
     [SerializeField] CarTrailListner carTrailListner;
 
     [SerializeField] GameObject cameraObject;
@@ -56,6 +58,7 @@ public class CarDriver : MonoBehaviour, ITriggerable
     float timeSvrRpcLast = 0; //когда последний раз сервер слал обновление картинки
 
     bool isInitialized;
+    Player owner;
 
     #endregion
 
@@ -115,23 +118,11 @@ public class CarDriver : MonoBehaviour, ITriggerable
     void Awake()
     {
         spawnPosition = currentRigidbody.transform.position;
-        carTrail.Initialize(carTrail.transform);
     }
 
     void OnEnable()
     {
         currentRigidbody.centerOfMass = centerOfMassTransform.localPosition;
-        SimpleGui.OnUp += (a) => {
-            if (a == GuiButtonTypeTEMP.Reset)
-            {
-                OnEnterTrigger?.Invoke(TriggerType.Trail);
-            }
-            if (a == GuiButtonTypeTEMP.Disconnect)
-            {
-                GameManager.Instance.NetworkManager.StopClient();
-                GameManager.Instance.NetworkManager.StopHost();
-            }
-        };
     }
 
 
@@ -189,16 +180,25 @@ public class CarDriver : MonoBehaviour, ITriggerable
 
     #region Public methods
 
-    public void Initialize()
+    public void Initialize(Player owner)
     {
+        this.owner = owner;
         isInitialized = true;
+        carTrail.Initialize(emmitTrailTransfom, owner);
     }
     
 
 
     public void Deinitialize()
     {
+        carTrail.DestroyTrail();
         isInitialized = false;
+    }
+
+
+    public void CustomUpdate(float deltaTime)
+    {
+        carTrail.CustomUpdate(deltaTime);
     }
     #endregion
 
@@ -243,16 +243,19 @@ public class CarDriver : MonoBehaviour, ITriggerable
 
     #region ITriggerable interface
 
-    public void OnTriggerEnter(TriggerType triggerType, ITrigger triggerObject)
+    public void OnEnterTrigger(TriggerType triggerType, ITrigger triggerObject)
     {
-        switch (triggerType)
+        if (IsLocalPlayer)
         {
-            case TriggerType.Trail:
-                OnEnterTrigger?.Invoke(TriggerType.Trail);
-                break;
+            switch (triggerType)
+            {
+                case TriggerType.Trail:
+                    OnEnterTriggerEvent?.Invoke(TriggerType.Trail);
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
+            }
         }
     }
 
