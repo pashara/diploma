@@ -112,7 +112,7 @@ public class CarTrail : MonoBehaviour
 
     #region Unity lifecycle
 
-    BoxCollider trailTriggerPrefab = null;
+    GameObject trailTriggerPrefab = null;
 
     void OnEnable()
     {
@@ -123,7 +123,9 @@ public class CarTrail : MonoBehaviour
     {
         for (int i = 0; i < collidersPoolCount; i++)
         {
-            spawnedBoxColliders.Add(Instantiate<BoxCollider>(trailTriggerPrefab, transform));
+            GameObject a = Instantiate(trailTriggerPrefab, transform);
+            a.GetComponent<TrailTrigger>().GameObject = owner.gameObject;
+            spawnedBoxColliders.Add(a.GetComponent<BoxCollider>());
         }
     }
 
@@ -136,7 +138,9 @@ public class CarTrail : MonoBehaviour
             for (int i = 0; i < addOnceToPool; i++)
             {
                 isAdded = true;
-                spawnedBoxColliders.Add(Instantiate<BoxCollider>(trailTriggerPrefab, transform));
+                GameObject a = Instantiate(trailTriggerPrefab, transform);
+                a.GetComponent<TrailTrigger>().GameObject = owner.gameObject;
+                spawnedBoxColliders.Add(a.GetComponent<BoxCollider>());
             }
         }
         return isAdded;
@@ -336,14 +340,14 @@ public class CarTrail : MonoBehaviour
 
         if (trailTriggerPrefab == null)
         {
-            GameObject colliderGameObject = new GameObject("ColliderItem");
-            colliderGameObject.transform.SetParent(transform);
-            TrailTrigger trailTrigger = colliderGameObject.AddComponent<TrailTrigger>();
-
-            trailTriggerPrefab = colliderGameObject.AddComponent<BoxCollider>();
-            trailTriggerPrefab.isTrigger = true;
-            trailTriggerPrefab.enabled = false;
+            trailTriggerPrefab = new GameObject("ColliderItem");
+            trailTriggerPrefab.transform.SetParent(transform);
+            TrailTrigger trailTrigger = trailTriggerPrefab.AddComponent<TrailTrigger>();
             trailTrigger.GameObject = owner.gameObject;
+
+            BoxCollider colliderBox = trailTriggerPrefab.AddComponent<BoxCollider>();
+            colliderBox.isTrigger = true;
+            colliderBox.enabled = false;
         }
 
         InitializeCollidersPool();
@@ -380,9 +384,21 @@ public class CarTrail : MonoBehaviour
     }
 
 
+    public void UpdateColor()
+    {
+        if (CurrentMaterial != null)
+        {
+            Color newColor = MyNetworkManager.Instance.ColorByIndex(owner.ColorIndex);// Color.red;
+            CurrentMaterial.color = new Color(newColor.r, newColor.g, newColor.b, 0.5f);
+            CurrentMaterial.SetVector("_EmissionColor", newColor * 5f);
+        }
+    }
+
+
     void CreateTrail()
     {
         trailObject = new GameObject("Trail");
+        trailObject.transform.parent = transform;
         trailObject.transform.position = Vector3.zero;
         trailObject.transform.rotation = Quaternion.identity;
         trailObject.transform.localScale = Vector3.one;
@@ -402,6 +418,7 @@ public class CarTrail : MonoBehaviour
         quaternionStep = Quaternion.Euler(0.0f, 0.0f, angleStep);
 
         CurrentMaterial = new Material(material);
+        UpdateColor();
 
         trailMesh = new Mesh();
         trailObject.GetComponent<MeshFilter>().mesh = trailMesh;
@@ -416,10 +433,11 @@ public class CarTrail : MonoBehaviour
             Destroy(item.gameObject);
         });
         spawnedBoxColliders.Clear();
-
+        Destroy(trailTriggerPrefab);
         Destroy(trailObject);
         Destroy(trailMesh);
         points.Clear();
+        trailTriggerPrefab = null;
         _isInitialized = false;
     }
 

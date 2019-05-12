@@ -20,7 +20,7 @@ public class CarDriver : MonoBehaviour, ITriggerable
 {
     #region Events
 
-    public event Action<TriggerType> OnEnterTriggerEvent;
+    public event Action<TriggerType, ITrigger> OnEnterTriggerEvent;
 
     #endregion
 
@@ -250,7 +250,7 @@ public class CarDriver : MonoBehaviour, ITriggerable
             switch (triggerType)
             {
                 case TriggerType.Trail:
-                    OnEnterTriggerEvent?.Invoke(TriggerType.Trail);
+                    OnEnterTriggerEvent?.Invoke(TriggerType.Trail, triggerObject);
                     break;
 
                 default:

@@ -118,12 +118,14 @@ namespace GameScreenItems
         {
             string playerName = info?.info?.user_name;
 
-            uiInfo.uiInstance.PlayerPoints = info.instance.playerPoints;
+            uiInfo.uiInstance.PlayerPoints = info.instance.PlayerPoints;
 
             if (playerName != null)
             {
                 uiInfo.uiInstance.PlayerName = playerName;
             }
+
+            uiInfo.uiInstance.BackgroundImage.color = MyNetworkManager.Instance.ColorByIndex(uiInfo.playerInstance.ColorIndex);
 
             if (!uiInfo.uiInstance.LoadedAvatarTexture.IsStartLoading)
             {

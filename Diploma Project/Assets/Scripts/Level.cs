@@ -4,10 +4,17 @@ using UnityEngine;
 
 public class Level : MonoBehaviour
 {
-    
+    #region Fields
+
     [SerializeField] Transform LBBound;
     [SerializeField] Transform RTBound;
-    
+
+    #endregion
+
+
+
+    #region Properties
+
     public Transform LBBoundTransform
     {
         get
@@ -16,6 +23,7 @@ public class Level : MonoBehaviour
         }
     }
 
+
     public Transform RTBoundTransform
     {
         get
@@ -23,7 +31,8 @@ public class Level : MonoBehaviour
             return RTBound;
         }
     }
-    
+
+    #endregion
 
     public void Initialize()
     {

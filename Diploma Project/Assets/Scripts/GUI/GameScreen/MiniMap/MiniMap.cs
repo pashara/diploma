@@ -79,7 +79,9 @@ namespace GameScreenItems
                 }
 
                 minimapObjectInstance.transform.localPosition = positionOnMap;
-                
+                minimapObjectInstance.Color = MyNetworkManager.Instance.ColorByIndex(info[i].player.ColorIndex);
+
+
             }
         }
     }

@@ -68,6 +68,9 @@ namespace GameScreenItems
         }
 
 
+        public Image BackgroundImage => backgroundImage;
+
+
         public LoadableImage AvatarImage => avatar;
 
 
