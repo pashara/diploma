@@ -30,6 +30,7 @@ namespace GameScreenItems
             {
                 if (players[i].playerInstance == null)
                 {
+                    Destroy(players[i].gameObject);
                     players.RemoveAt(i);
                     i--;
                 }

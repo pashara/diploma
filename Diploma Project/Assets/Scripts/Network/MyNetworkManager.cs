@@ -4,6 +4,9 @@ using System;
 using UnityEngine;
 using UnityEngine.Networking;
 using System.Linq;
+using System.Collections;
+using System.Net;
+using System.Net.Sockets;
 
 public class PlayerInfo
 {
@@ -35,10 +38,13 @@ public class MyNetworkManager : NetworkManager
 
 
     [SerializeField] List<Color> colors;
+    [SerializeField] int sendServerInfoTime;
     
     List<PlayerInfo> playersAll = new List<PlayerInfo>();
     public Dictionary<NetworkConnection, Player> players = new Dictionary<NetworkConnection, Player>();
     bool isHostStarted = false;
+
+    Coroutine sendServerInfoCoroutine;
 
     #endregion
 
@@ -64,6 +70,25 @@ public class MyNetworkManager : NetworkManager
         }
     }
 
+
+    public static string LocalIPAddress
+    {
+        get
+        {
+            IPHostEntry host;
+            string localIP = "0.0.0.0";
+            host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (IPAddress ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    localIP = ip.ToString();
+                    break;
+                }
+            }
+            return localIP;
+        }
+    }
     #endregion
 
 
@@ -134,7 +159,18 @@ public class MyNetworkManager : NetworkManager
     {
         base.OnStartHost();
         isHostStarted = true;
+        sendServerInfoCoroutine = StartCoroutine(SendData("Пацаны", networkAddress, networkPort, false));
         OnStart?.Invoke(HostType.Host);
+    }
+
+    IEnumerator SendData(string title, string ipAddress, int port, bool hasPassord)
+    {
+        do
+        {
+            UnityWebRequest www = UnityWebRequest.Get($"{GlobalServerManager.Instance.ServerInfoUpdateURI}?gameAlias=tron&ipAddress={ipAddress}&port={port}&hasPassword={((hasPassord) ? 1 : 0)}&title={title}");
+            yield return www.SendWebRequest();
+            yield return new WaitForSecondsRealtime(sendServerInfoTime);
+        } while (isHostStarted);
     }
 
 
@@ -148,6 +184,10 @@ public class MyNetworkManager : NetworkManager
     public override void OnStopHost()
     {
         base.OnStopHost();
+        if (sendServerInfoCoroutine != null)
+        {
+            StopCoroutine(sendServerInfoCoroutine);
+        }
         isHostStarted = false;
         OnStop?.Invoke(HostType.Host);
     }
@@ -225,7 +265,7 @@ public class MyNetworkManager : NetworkManager
 
     private void Player_OnIdSeted(Player playerInstance, int playerId)
     {
-        string requestUri = $"{GlobalServerManager.Instance.PlayeInfoURI}?id={playerId}";
+        string requestUri = $"{GlobalServerManager.Instance.PlayeInfoURI}?user_id={playerId}";
         GlobalServerManager.Instance.LoadDataFromUrl(requestUri, (isGood, dataString) =>
         {
             if (isGood)

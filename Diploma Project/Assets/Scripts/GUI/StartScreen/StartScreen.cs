@@ -12,9 +12,10 @@ public class StartScreen : BaseScreen
     #region Fields
 
     [SerializeField] UserInfo userInfo;
+    [SerializeField] ServersInfo serversInfo;
     [SerializeField] Button startServerButton;
     [SerializeField] Button connectServerButton;
-    [SerializeField] InputField serverAddressInput;
+    [SerializeField] Button signOutButton;
     [SerializeField] InputField serverPortInput;
 
     #endregion
@@ -26,6 +27,7 @@ public class StartScreen : BaseScreen
     {
         startServerButton.onClick.AddListener(() => StartServerButton_OnClick());
         connectServerButton.onClick.AddListener(() => ConnectButton_OnClick());
+        signOutButton.onClick.AddListener(() => SignOutButton_OnClick());
     }
 
 
@@ -33,6 +35,7 @@ public class StartScreen : BaseScreen
     {
         startServerButton.onClick.RemoveAllListeners();
         connectServerButton.onClick.RemoveAllListeners();
+        signOutButton.onClick.RemoveAllListeners();
     }
 
     #endregion
@@ -54,6 +57,7 @@ public class StartScreen : BaseScreen
 
     public void Initialize(GlobalUserData data)
     {
+        serverPortInput.text = "7777";
         userInfo.Initialize(data);
     }
 
@@ -71,15 +75,34 @@ public class StartScreen : BaseScreen
     
     void StartServerButton_OnClick()
     {
-        GameManager.Instance.NetworkManager.networkAddress = serverAddressInput.text;
+        GameManager.Instance.NetworkManager.networkAddress = MyNetworkManager.LocalIPAddress;// serverAddressInput.text;
+        GameManager.Instance.NetworkManager.networkPort = Int32.Parse(serverPortInput.text);
         GameManager.Instance.NetworkManager.StartHost();
     }
 
 
     void ConnectButton_OnClick()
     {
-        GameManager.Instance.NetworkManager.networkAddress = serverAddressInput.text;
-        GameManager.Instance.NetworkManager.StartClient();
+        var identificator = serversInfo.SelectedItemIdentificator;
+        if (identificator != null)
+        {
+            GameManager.Instance.NetworkManager.networkAddress = identificator.ipAddress;
+            GameManager.Instance.NetworkManager.networkPort = identificator.port;
+            GameManager.Instance.NetworkManager.StartClient();
+        }
+    }
+
+
+    void SignOutButton_OnClick()
+    {
+        GuiManager.Instance.HideScreen(ScreenType.MainMenu, true, (menuScreen) =>
+        {
+            (menuScreen as StartScreen).Deinitialize();
+            GameManager.Instance.UserData = null;
+            GuiManager.Instance.ShowScreen(ScreenType.AutentificationScreen, true, (loginScreen) =>
+            {
+            });
+        });
     }
 
     #endregion

@@ -7,12 +7,18 @@ using System;
 public class GlobalServerManager : InitializableMonobehaviour
 {
 
+    public const string SuccessDataAnswer = "ok";
+    public const string ErrorDataAnswer = "error";
     #region Fields
 
+    [SerializeField] bool useLocalServer = false;
     [SerializeField] string serverUrl = "";
+    [SerializeField] string localServerUrl = "";
 
     [Header("UrlPartes")]
     [SerializeField] string authUrl = "";
+    [SerializeField] string sendServerInfoUri = "";
+    [SerializeField] string getServersInfoUri = "";
 
     #endregion
 
@@ -31,7 +37,7 @@ public class GlobalServerManager : InitializableMonobehaviour
     {
         get
         {
-            return $"{serverUrl}{authUrl}";
+            return $"{ServerUrl}{authUrl}";
         }
     }
 
@@ -40,7 +46,34 @@ public class GlobalServerManager : InitializableMonobehaviour
     {
         get
         {
-            return $"{serverUrl}{authUrl}";
+            return $"{ServerUrl}{authUrl}";
+        }
+    }
+
+
+    public string ServerInfoUpdateURI
+    {
+        get
+        {
+            return $"{ServerUrl}{sendServerInfoUri}";
+        }
+    }
+
+
+    public string GetServersInfoURI
+    {
+        get
+        {
+            return $"{ServerUrl}{getServersInfoUri}";
+        }
+    }
+
+
+    private string ServerUrl
+    {
+        get
+        {
+            return (useLocalServer) ? localServerUrl : serverUrl;
         }
     }
 
